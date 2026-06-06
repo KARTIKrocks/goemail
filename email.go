@@ -287,8 +287,10 @@ func extractAddresses(addrs []string) []string {
 
 // validateHeaderField validates a header key-value pair for security
 func validateHeaderField(key, value string) error {
-	// Check for CRLF injection in key
-	if strings.ContainsAny(key, "\r\n:") {
+	// Reject invalid header names using the same strict check the MIME writer
+	// applies (isValidHeaderName), so Build()/Validate() fail fast instead of
+	// erroring later during raw-message generation.
+	if !isValidHeaderName(key) {
 		return fmt.Errorf("%w: key contains invalid characters", ErrInvalidHeader)
 	}
 	// Check for CRLF injection in value

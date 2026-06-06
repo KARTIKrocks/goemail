@@ -136,6 +136,7 @@ func TestEmailHeaderValidation(t *testing.T) {
 		{"CRLF in key", "X-Custom\r\n", "value", true},
 		{"CRLF in value", "X-Custom", "value\r\nhacker", true},
 		{"colon in key", "X:Custom", "value", true},
+		{"space in key", "X Custom", "value", true},
 		{"empty value", "X-Custom", "", false},
 	}
 
