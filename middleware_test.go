@@ -94,6 +94,7 @@ func testEmail() *Email {
 // --- Chain tests ---
 
 func TestChain_Order(t *testing.T) {
+	t.Parallel()
 	var order []string
 	makeMW := func(name string) Middleware {
 		return func(next Sender) Sender {
@@ -129,6 +130,7 @@ func (s *orderSender) Send(ctx context.Context, e *Email) error {
 func (s *orderSender) Close() error { return s.next.Close() }
 
 func TestChain_Empty(t *testing.T) {
+	t.Parallel()
 	mock := NewMockSender()
 	wrapped := Chain(mock)
 	if wrapped != mock {
@@ -139,6 +141,7 @@ func TestChain_Empty(t *testing.T) {
 // --- WithLogging tests ---
 
 func TestWithLogging_Success(t *testing.T) {
+	t.Parallel()
 	logger := &recordingLogger{}
 	mock := NewMockSender()
 	wrapped := Chain(mock, WithLogging(logger))
@@ -161,6 +164,7 @@ func TestWithLogging_Success(t *testing.T) {
 }
 
 func TestWithLogging_Failure(t *testing.T) {
+	t.Parallel()
 	logger := &recordingLogger{}
 	sendErr := errors.New("smtp error")
 	sender := &failSender{err: sendErr}
@@ -181,6 +185,7 @@ func TestWithLogging_Failure(t *testing.T) {
 }
 
 func TestWithLogging_NilLogger(t *testing.T) {
+	t.Parallel()
 	mock := NewMockSender()
 	wrapped := Chain(mock, WithLogging(nil))
 
@@ -194,6 +199,7 @@ func TestWithLogging_NilLogger(t *testing.T) {
 // --- WithRecovery tests ---
 
 func TestWithRecovery_NoPanic(t *testing.T) {
+	t.Parallel()
 	mock := NewMockSender()
 	wrapped := Chain(mock, WithRecovery())
 
@@ -207,6 +213,7 @@ func TestWithRecovery_NoPanic(t *testing.T) {
 }
 
 func TestWithRecovery_CatchesPanic(t *testing.T) {
+	t.Parallel()
 	wrapped := Chain(&panicSender{}, WithRecovery())
 
 	err := wrapped.Send(context.Background(), testEmail())
@@ -219,6 +226,7 @@ func TestWithRecovery_CatchesPanic(t *testing.T) {
 }
 
 func TestWithRecovery_Close(t *testing.T) {
+	t.Parallel()
 	mock := NewMockSender()
 	wrapped := Chain(mock, WithRecovery())
 
@@ -231,6 +239,7 @@ func TestWithRecovery_Close(t *testing.T) {
 // --- WithHooks tests ---
 
 func TestWithHooks_AllCallbacks(t *testing.T) {
+	t.Parallel()
 	var (
 		onSendCalled    atomic.Bool
 		onSuccessCalled atomic.Bool
@@ -269,6 +278,7 @@ func TestWithHooks_AllCallbacks(t *testing.T) {
 }
 
 func TestWithHooks_OnFailure(t *testing.T) {
+	t.Parallel()
 	var (
 		onFailureCalled atomic.Bool
 		capturedErr     error
@@ -295,6 +305,7 @@ func TestWithHooks_OnFailure(t *testing.T) {
 }
 
 func TestWithHooks_NilCallbacks(t *testing.T) {
+	t.Parallel()
 	mock := NewMockSender()
 	wrapped := Chain(mock, WithHooks(SendHooks{}))
 
@@ -308,6 +319,7 @@ func TestWithHooks_NilCallbacks(t *testing.T) {
 // --- WithMetrics tests ---
 
 func TestWithMetrics_Success(t *testing.T) {
+	t.Parallel()
 	metrics := &recordingMetrics{}
 	mock := NewMockSender()
 	wrapped := Chain(mock, WithMetrics(metrics))
@@ -332,6 +344,7 @@ func TestWithMetrics_Success(t *testing.T) {
 }
 
 func TestWithMetrics_Failure(t *testing.T) {
+	t.Parallel()
 	metrics := &recordingMetrics{}
 	sender := &failSender{err: errors.New("fail")}
 	wrapped := Chain(sender, WithMetrics(metrics))
@@ -352,6 +365,7 @@ func TestWithMetrics_Failure(t *testing.T) {
 // --- NoOpMetricsCollector test ---
 
 func TestNoOpMetricsCollector(t *testing.T) {
+	t.Parallel()
 	var c NoOpMetricsCollector
 	// Should not panic
 	c.IncSendAttempt()
@@ -363,6 +377,7 @@ func TestNoOpMetricsCollector(t *testing.T) {
 // --- Concurrency test ---
 
 func TestMiddleware_Concurrency(t *testing.T) {
+	t.Parallel()
 	metrics := &recordingMetrics{}
 	mock := NewMockSender()
 	wrapped := Chain(mock,
@@ -399,6 +414,7 @@ func TestMiddleware_Concurrency(t *testing.T) {
 // --- Close chain test ---
 
 func TestMiddleware_CloseChain(t *testing.T) {
+	t.Parallel()
 	var closed atomic.Bool
 	mock := &closeRecordingSender{closed: &closed}
 
@@ -431,6 +447,7 @@ func (s *closeRecordingSender) Close() error {
 // --- NewMailerWithOptions test ---
 
 func TestNewMailerWithOptions(t *testing.T) {
+	t.Parallel()
 	metrics := &recordingMetrics{}
 	mock := NewMockSender()
 

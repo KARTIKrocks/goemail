@@ -76,6 +76,50 @@ func BuildRawMessageWithDKIM(e *Email, dkim *DKIMConfig) ([]byte, error) {
 	return SignMessage(msg, dkim)
 }
 
+// containsCRLF reports whether s contains CR or LF characters.
+func containsCRLF(s string) bool {
+	return strings.ContainsAny(s, "\r\n")
+}
+
+// isValidHeaderName reports whether name contains only valid header token characters.
+func isValidHeaderName(name string) bool {
+	if name == "" {
+		return false
+	}
+	for _, r := range name {
+		// RFC 5322 field-name: visible ASCII except colon
+		if r < 33 || r > 126 || r == ':' {
+			return false
+		}
+	}
+	return true
+}
+
+// writeCustomHeaders writes user-supplied headers (sorted for deterministic
+// output), skipping reserved headers and rejecting names/values that could
+// inject additional headers via invalid characters or CR/LF.
+func writeCustomHeaders(buf *strings.Builder, headers map[string]string) error {
+	headerKeys := make([]string, 0, len(headers))
+	for key := range headers {
+		headerKeys = append(headerKeys, key)
+	}
+	sort.Strings(headerKeys)
+	for _, key := range headerKeys {
+		if _, reserved := reservedHeaders[strings.ToLower(key)]; reserved {
+			continue
+		}
+		if !isValidHeaderName(key) {
+			return fmt.Errorf("invalid header name %q: contains invalid characters", key)
+		}
+		value := headers[key]
+		if containsCRLF(value) {
+			return fmt.Errorf("invalid header value for %q: contains CR/LF", key)
+		}
+		fmt.Fprintf(buf, "%s: %s\r\n", key, value)
+	}
+	return nil
+}
+
 // buildRawMessage builds the email message with proper MIME encoding.
 func buildRawMessage(e *Email) ([]byte, error) {
 	buf := &strings.Builder{}
@@ -107,17 +151,9 @@ func buildRawMessage(e *Email) ([]byte, error) {
 	// Add Date header
 	fmt.Fprintf(buf, "Date: %s\r\n", time.Now().Format(time.RFC1123Z))
 
-	// Custom headers (sorted for deterministic output)
-	headerKeys := make([]string, 0, len(e.Headers))
-	for key := range e.Headers {
-		headerKeys = append(headerKeys, key)
-	}
-	sort.Strings(headerKeys)
-	for _, key := range headerKeys {
-		if _, reserved := reservedHeaders[strings.ToLower(key)]; reserved {
-			continue
-		}
-		fmt.Fprintf(buf, "%s: %s\r\n", key, e.Headers[key])
+	// Custom headers
+	if err := writeCustomHeaders(buf, e.Headers); err != nil {
+		return nil, err
 	}
 
 	// MIME headers
@@ -172,8 +208,15 @@ func buildRawMessage(e *Email) ([]byte, error) {
 
 		// Attachments
 		for _, att := range e.Attachments {
+			contentType := att.ContentType
+			if contentType == "" {
+				contentType = "application/octet-stream"
+			}
+			if containsCRLF(contentType) {
+				return nil, fmt.Errorf("invalid attachment content-type for %q: contains CR/LF", att.Filename)
+			}
 			fmt.Fprintf(buf, "--%s\r\n", boundary)
-			fmt.Fprintf(buf, "Content-Type: %s\r\n", att.ContentType)
+			fmt.Fprintf(buf, "Content-Type: %s\r\n", contentType)
 			buf.WriteString("Content-Transfer-Encoding: base64\r\n")
 			fmt.Fprintf(buf, "Content-Disposition: %s\r\n\r\n", formatDisposition(att.Filename))
 
@@ -250,7 +293,9 @@ func quotedPrintableEncode(s string) string {
 func formatAddress(addr string) string {
 	parsed, err := mail.ParseAddress(addr)
 	if err != nil {
-		return addr
+		// Strip CR/LF from malformed address before returning
+		sanitized := strings.NewReplacer("\r", "", "\n", "").Replace(addr)
+		return sanitized
 	}
 	if parsed.Name == "" {
 		return parsed.Address

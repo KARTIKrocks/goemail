@@ -48,6 +48,7 @@ func buildTestMessage(t *testing.T) []byte {
 }
 
 func TestDKIMConfig_Validate(t *testing.T) {
+	t.Parallel()
 	rsaKey := generateRSAKey(t)
 
 	tests := []struct {
@@ -102,6 +103,7 @@ func TestDKIMConfig_Validate(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			err := tt.config.Validate()
 			if tt.wantErr != "" {
 				if err == nil {
@@ -118,6 +120,7 @@ func TestDKIMConfig_Validate(t *testing.T) {
 }
 
 func TestSignMessage_RSA(t *testing.T) {
+	t.Parallel()
 	rsaKey := generateRSAKey(t)
 	msg := buildTestMessage(t)
 
@@ -153,6 +156,7 @@ func TestSignMessage_RSA(t *testing.T) {
 }
 
 func TestSignMessage_Ed25519(t *testing.T) {
+	t.Parallel()
 	edKey := generateEd25519Key(t)
 	msg := buildTestMessage(t)
 
@@ -174,6 +178,7 @@ func TestSignMessage_Ed25519(t *testing.T) {
 }
 
 func TestSignMessage_Expiration(t *testing.T) {
+	t.Parallel()
 	rsaKey := generateRSAKey(t)
 	msg := buildTestMessage(t)
 
@@ -196,6 +201,7 @@ func TestSignMessage_Expiration(t *testing.T) {
 }
 
 func TestSignMessage_CustomHeaders(t *testing.T) {
+	t.Parallel()
 	rsaKey := generateRSAKey(t)
 	msg := buildTestMessage(t)
 
@@ -218,6 +224,7 @@ func TestSignMessage_CustomHeaders(t *testing.T) {
 }
 
 func TestSignMessage_CustomHeadersAutoIncludesFrom(t *testing.T) {
+	t.Parallel()
 	rsaKey := generateRSAKey(t)
 	msg := buildTestMessage(t)
 
@@ -240,6 +247,7 @@ func TestSignMessage_CustomHeadersAutoIncludesFrom(t *testing.T) {
 }
 
 func TestSignMessage_Canonicalization(t *testing.T) {
+	t.Parallel()
 	rsaKey := generateRSAKey(t)
 	msg := buildTestMessage(t)
 
@@ -257,6 +265,7 @@ func TestSignMessage_Canonicalization(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			config := &DKIMConfig{
 				Domain:                 "example.com",
 				Selector:               "default",
@@ -279,6 +288,7 @@ func TestSignMessage_Canonicalization(t *testing.T) {
 }
 
 func TestSignMessage_VerifyRSASignature(t *testing.T) {
+	t.Parallel()
 	rsaKey := generateRSAKey(t)
 	msg := buildTestMessage(t)
 
@@ -354,6 +364,7 @@ func TestSignMessage_VerifyRSASignature(t *testing.T) {
 }
 
 func TestSignMessage_VerifyEd25519Signature(t *testing.T) {
+	t.Parallel()
 	pub, priv, _ := ed25519.GenerateKey(rand.Reader)
 	msg := buildTestMessage(t)
 
@@ -419,6 +430,7 @@ func TestSignMessage_VerifyEd25519Signature(t *testing.T) {
 }
 
 func TestSignMessage_MissingFromHeader(t *testing.T) {
+	t.Parallel()
 	rsaKey := generateRSAKey(t)
 
 	// Craft a raw message without a From header
@@ -440,6 +452,7 @@ func TestSignMessage_MissingFromHeader(t *testing.T) {
 }
 
 func TestSignMessage_DuplicateHeaders(t *testing.T) {
+	t.Parallel()
 	rsaKey := generateRSAKey(t)
 
 	// Message with duplicate Received headers (common in real email)
@@ -470,6 +483,7 @@ func TestSignMessage_DuplicateHeaders(t *testing.T) {
 }
 
 func TestSignMessage_FoldedHeaders(t *testing.T) {
+	t.Parallel()
 	rsaKey := generateRSAKey(t)
 
 	// Message with a folded Subject header
@@ -499,6 +513,7 @@ func TestSignMessage_FoldedHeaders(t *testing.T) {
 }
 
 func TestParseHeaders_DuplicateHeaders(t *testing.T) {
+	t.Parallel()
 	headerSection := "From: sender@example.com\r\n" +
 		"Received: from mx1.example.com\r\n" +
 		"Received: from mx2.example.com\r\n" +
@@ -534,6 +549,7 @@ func TestParseHeaders_DuplicateHeaders(t *testing.T) {
 }
 
 func TestParseHeaders_FoldedHeader(t *testing.T) {
+	t.Parallel()
 	headerSection := "From: sender@example.com\r\n" +
 		"Subject: This is a long\r\n" +
 		" subject line\r\n"
@@ -551,6 +567,7 @@ func TestParseHeaders_FoldedHeader(t *testing.T) {
 }
 
 func TestCanonicalizeHeader_Simple(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		input string
 		want  string
@@ -568,6 +585,7 @@ func TestCanonicalizeHeader_Simple(t *testing.T) {
 }
 
 func TestCanonicalizeHeader_Relaxed(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		input string
 		want  string
@@ -587,6 +605,7 @@ func TestCanonicalizeHeader_Relaxed(t *testing.T) {
 }
 
 func TestCanonicalizeBody_Simple(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name  string
 		input string
@@ -601,6 +620,7 @@ func TestCanonicalizeBody_Simple(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			got := canonicalizeBody(tt.input, CanonicalizationSimple)
 			if got != tt.want {
 				t.Errorf("canonicalizeBody(%q, simple) = %q, want %q", tt.input, got, tt.want)
@@ -610,6 +630,7 @@ func TestCanonicalizeBody_Simple(t *testing.T) {
 }
 
 func TestCanonicalizeBody_Relaxed(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name  string
 		input string
@@ -624,6 +645,7 @@ func TestCanonicalizeBody_Relaxed(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			got := canonicalizeBody(tt.input, CanonicalizationRelaxed)
 			if got != tt.want {
 				t.Errorf("canonicalizeBody(%q, relaxed) = %q, want %q", tt.input, got, tt.want)
@@ -633,6 +655,7 @@ func TestCanonicalizeBody_Relaxed(t *testing.T) {
 }
 
 func TestParseDKIMPrivateKey_RSA_PKCS1(t *testing.T) {
+	t.Parallel()
 	rsaKey := generateRSAKey(t)
 	pemBytes := pem.EncodeToMemory(&pem.Block{
 		Type:  "RSA PRIVATE KEY",
@@ -650,6 +673,7 @@ func TestParseDKIMPrivateKey_RSA_PKCS1(t *testing.T) {
 }
 
 func TestParseDKIMPrivateKey_RSA_PKCS8(t *testing.T) {
+	t.Parallel()
 	rsaKey := generateRSAKey(t)
 	pkcs8Bytes, err := x509.MarshalPKCS8PrivateKey(rsaKey)
 	if err != nil {
@@ -671,6 +695,7 @@ func TestParseDKIMPrivateKey_RSA_PKCS8(t *testing.T) {
 }
 
 func TestParseDKIMPrivateKey_Ed25519(t *testing.T) {
+	t.Parallel()
 	_, priv, _ := ed25519.GenerateKey(rand.Reader)
 	pkcs8Bytes, err := x509.MarshalPKCS8PrivateKey(priv)
 	if err != nil {
@@ -692,6 +717,7 @@ func TestParseDKIMPrivateKey_Ed25519(t *testing.T) {
 }
 
 func TestParseDKIMPrivateKey_InvalidPEM(t *testing.T) {
+	t.Parallel()
 	_, err := ParseDKIMPrivateKey([]byte("not a PEM block"))
 	if err == nil {
 		t.Fatal("expected error for invalid PEM")
@@ -699,6 +725,7 @@ func TestParseDKIMPrivateKey_InvalidPEM(t *testing.T) {
 }
 
 func TestBuildRawMessage_WithDKIM(t *testing.T) {
+	t.Parallel()
 	rsaKey := generateRSAKey(t)
 	e := NewEmail().
 		SetFrom("sender@example.com").
@@ -723,6 +750,7 @@ func TestBuildRawMessage_WithDKIM(t *testing.T) {
 }
 
 func TestBuildRawMessage_WithoutDKIM(t *testing.T) {
+	t.Parallel()
 	e := NewEmail().
 		SetFrom("sender@example.com").
 		AddTo("recipient@example.com").

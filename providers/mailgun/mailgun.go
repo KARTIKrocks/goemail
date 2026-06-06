@@ -68,57 +68,11 @@ func (s *Sender) Send(ctx context.Context, e *email.Email) error {
 	var buf bytes.Buffer
 	w := multipart.NewWriter(&buf)
 
-	// Required fields
-	writeField(w, "from", e.From)
-	for _, addr := range e.To {
-		writeField(w, "to", addr)
+	if err := writeFields(w, e); err != nil {
+		return fmt.Errorf("mailgun: write field: %w", err)
 	}
-	writeField(w, "subject", e.Subject)
-
-	// Optional text/html
-	if e.Body != "" {
-		writeField(w, "text", e.Body)
-	}
-	if e.HTMLBody != "" {
-		writeField(w, "html", e.HTMLBody)
-	}
-
-	// Cc / Bcc
-	for _, addr := range e.Cc {
-		writeField(w, "cc", addr)
-	}
-	for _, addr := range e.Bcc {
-		writeField(w, "bcc", addr)
-	}
-
-	// Reply-To and custom headers
-	if e.ReplyTo != "" {
-		writeField(w, "h:Reply-To", e.ReplyTo)
-	}
-	for key, value := range e.Headers {
-		writeField(w, "h:"+key, value)
-	}
-
-	// Attachments. CreateFormFile would hard-code Content-Type to
-	// application/octet-stream, which Mailgun then forwards verbatim and
-	// clobbers the caller's real MIME type (e.g., application/pdf). Build
-	// the part manually so att.ContentType is preserved.
-	for _, att := range e.Attachments {
-		ct := att.ContentType
-		if ct == "" {
-			ct = "application/octet-stream"
-		}
-		h := make(textproto.MIMEHeader)
-		h.Set("Content-Disposition",
-			fmt.Sprintf(`form-data; name="attachment"; filename="%s"`, mgEscapeQuotes(att.Filename)))
-		h.Set("Content-Type", ct)
-		part, err := w.CreatePart(h)
-		if err != nil {
-			return fmt.Errorf("mailgun: create attachment part: %w", err)
-		}
-		if _, err = part.Write(att.Data); err != nil {
-			return fmt.Errorf("mailgun: write attachment data: %w", err)
-		}
+	if err := writeAttachments(w, e.Attachments); err != nil {
+		return fmt.Errorf("mailgun: %w", err)
 	}
 
 	if err := w.Close(); err != nil {
@@ -137,7 +91,7 @@ func (s *Sender) Send(ctx context.Context, e *email.Email) error {
 	if err != nil {
 		return fmt.Errorf("mailgun: send request: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode >= 300 {
 		respBody, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
@@ -150,8 +104,73 @@ func (s *Sender) Send(ctx context.Context, e *email.Email) error {
 // Close is a no-op for Mailgun (HTTP is stateless).
 func (s *Sender) Close() error { return nil }
 
-func writeField(w *multipart.Writer, key, value string) {
-	_ = w.WriteField(key, value)
+// writeFields writes all non-attachment form fields. It records the first
+// write error and short-circuits, keeping the happy path flat.
+func writeFields(w *multipart.Writer, e *email.Email) error {
+	var err error
+	field := func(key, value string) {
+		if err != nil {
+			return
+		}
+		err = w.WriteField(key, value)
+	}
+
+	// Required fields
+	field("from", e.From)
+	for _, addr := range e.To {
+		field("to", addr)
+	}
+	field("subject", e.Subject)
+
+	// Optional text/html
+	if e.Body != "" {
+		field("text", e.Body)
+	}
+	if e.HTMLBody != "" {
+		field("html", e.HTMLBody)
+	}
+
+	// Cc / Bcc
+	for _, addr := range e.Cc {
+		field("cc", addr)
+	}
+	for _, addr := range e.Bcc {
+		field("bcc", addr)
+	}
+
+	// Reply-To and custom headers
+	if e.ReplyTo != "" {
+		field("h:Reply-To", e.ReplyTo)
+	}
+	for key, value := range e.Headers {
+		field("h:"+key, value)
+	}
+	return err
+}
+
+// writeAttachments writes each attachment as a multipart part. CreateFormFile
+// would hard-code Content-Type to application/octet-stream, which Mailgun then
+// forwards verbatim and clobbers the caller's real MIME type (e.g.,
+// application/pdf). Build the part manually so att.ContentType is preserved.
+func writeAttachments(w *multipart.Writer, attachments []email.Attachment) error {
+	for _, att := range attachments {
+		ct := att.ContentType
+		if ct == "" {
+			ct = "application/octet-stream"
+		}
+		h := make(textproto.MIMEHeader)
+		h.Set("Content-Disposition",
+			fmt.Sprintf(`form-data; name="attachment"; filename="%s"`, mgEscapeQuotes(att.Filename)))
+		h.Set("Content-Type", ct)
+		part, err := w.CreatePart(h)
+		if err != nil {
+			return fmt.Errorf("create attachment part: %w", err)
+		}
+		if _, err = part.Write(att.Data); err != nil {
+			return fmt.Errorf("write attachment data: %w", err)
+		}
+	}
+	return nil
 }
 
 var mgQuoteEscaper = strings.NewReplacer("\\", "\\\\", `"`, "\\\"")

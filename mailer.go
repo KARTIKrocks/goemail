@@ -17,6 +17,51 @@ type Mailer struct {
 	templates map[string]*Template
 }
 
+// cloneEmail creates a deep copy of an Email to avoid shared mutable state.
+func cloneEmail(src *Email) *Email {
+	if src == nil {
+		return nil
+	}
+	dst := &Email{
+		From:     src.From,
+		ReplyTo:  src.ReplyTo,
+		Subject:  src.Subject,
+		Body:     src.Body,
+		HTMLBody: src.HTMLBody,
+		err:      src.err,
+	}
+	// Deep copy slices
+	if len(src.To) > 0 {
+		dst.To = make([]string, len(src.To))
+		copy(dst.To, src.To)
+	}
+	if len(src.Cc) > 0 {
+		dst.Cc = make([]string, len(src.Cc))
+		copy(dst.Cc, src.Cc)
+	}
+	if len(src.Bcc) > 0 {
+		dst.Bcc = make([]string, len(src.Bcc))
+		copy(dst.Bcc, src.Bcc)
+	}
+	if len(src.Attachments) > 0 {
+		dst.Attachments = make([]Attachment, len(src.Attachments))
+		for i, att := range src.Attachments {
+			dst.Attachments[i] = Attachment{
+				Filename:    att.Filename,
+				ContentType: att.ContentType,
+				Data:        append([]byte(nil), att.Data...),
+			}
+		}
+	}
+	if len(src.Headers) > 0 {
+		dst.Headers = make(map[string]string, len(src.Headers))
+		for k, v := range src.Headers {
+			dst.Headers[k] = v
+		}
+	}
+	return dst
+}
+
 // NewMailer creates a new mailer
 func NewMailer(sender Sender, from string) *Mailer {
 	return &Mailer{
@@ -123,7 +168,10 @@ func (m *Mailer) SendTemplate(ctx context.Context, to []string, templateName str
 
 // SendEmail sends a custom email
 func (m *Mailer) SendEmail(ctx context.Context, email *Email) error {
-	e := *email // shallow copy to avoid mutating the caller's email
+	if email == nil {
+		return fmt.Errorf("nil email")
+	}
+	e := cloneEmail(email) // deep copy to avoid mutating the caller's email
 	if e.From == "" {
 		e.From = m.from
 	}
@@ -153,14 +201,17 @@ func (m *Mailer) SendBatch(ctx context.Context, emails []*Email, concurrencyLimi
 	// Build copies with From filled in and validate each.
 	prepared := make([]*Email, len(emails))
 	for i, email := range emails {
-		e := *email // shallow copy to avoid mutating the caller's email
+		if email == nil {
+			return fmt.Errorf("email %d is nil", i)
+		}
+		e := cloneEmail(email) // deep copy to avoid mutating the caller's email
 		if e.From == "" {
 			e.From = m.from
 		}
 		if _, err := e.Build(); err != nil {
 			return fmt.Errorf("email %d validation failed: %w", i, err)
 		}
-		prepared[i] = &e
+		prepared[i] = e
 	}
 
 	// Send emails concurrently. Use a plain errgroup (no WithContext) so that

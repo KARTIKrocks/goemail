@@ -131,6 +131,7 @@ func (p *smtpPool) dial(ctx context.Context) (*pooledConn, error) {
 	if p.config.UseTLS {
 		tlsConfig := &tls.Config{
 			ServerName: p.config.Host,
+			MinVersion: tls.VersionTLS12,
 		}
 		if tlsErr := client.StartTLS(tlsConfig); tlsErr != nil {
 			client.Close() //nolint:errcheck // best-effort cleanup
