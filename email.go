@@ -206,6 +206,14 @@ func (e *Email) Validate() error {
 			return err
 		}
 	}
+	for _, att := range e.Attachments {
+		if strings.ContainsAny(att.ContentType, "\r\n") {
+			return fmt.Errorf("invalid attachment content-type for %q: contains CR/LF", att.Filename)
+		}
+		if strings.ContainsAny(att.Filename, "\r\n") {
+			return fmt.Errorf("invalid attachment filename: contains CR/LF")
+		}
+	}
 	return nil
 }
 
@@ -279,8 +287,10 @@ func extractAddresses(addrs []string) []string {
 
 // validateHeaderField validates a header key-value pair for security
 func validateHeaderField(key, value string) error {
-	// Check for CRLF injection in key
-	if strings.ContainsAny(key, "\r\n:") {
+	// Reject invalid header names using the same strict check the MIME writer
+	// applies (isValidHeaderName), so Build()/Validate() fail fast instead of
+	// erroring later during raw-message generation.
+	if !isValidHeaderName(key) {
 		return fmt.Errorf("%w: key contains invalid characters", ErrInvalidHeader)
 	}
 	// Check for CRLF injection in value

@@ -14,6 +14,7 @@ import (
 )
 
 func TestEmailBuilder(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name    string
 		builder func() *Email
@@ -102,6 +103,7 @@ func TestEmailBuilder(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			email, err := tt.builder().Build()
 			if tt.wantErr {
 				if err == nil {
@@ -123,6 +125,7 @@ func TestEmailBuilder(t *testing.T) {
 }
 
 func TestEmailHeaderValidation(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name    string
 		key     string
@@ -133,11 +136,13 @@ func TestEmailHeaderValidation(t *testing.T) {
 		{"CRLF in key", "X-Custom\r\n", "value", true},
 		{"CRLF in value", "X-Custom", "value\r\nhacker", true},
 		{"colon in key", "X:Custom", "value", true},
+		{"space in key", "X Custom", "value", true},
 		{"empty value", "X-Custom", "", false},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			email := NewEmail().
 				SetFrom("sender@example.com").
 				AddTo("recipient@example.com").
@@ -156,6 +161,7 @@ func TestEmailHeaderValidation(t *testing.T) {
 }
 
 func TestMockSender(t *testing.T) {
+	t.Parallel()
 	mock := NewMockSender()
 	mailer := NewMailer(mock, "test@example.com")
 
@@ -217,6 +223,7 @@ func TestMockSenderCustomFunction(t *testing.T) {
 }
 
 func TestTemplate(t *testing.T) {
+	t.Parallel()
 	tmpl := NewTemplate("test")
 	tmpl.SetSubject("Hello {{.Name}}")
 	if _, err := tmpl.SetTextTemplate("Plain text for {{.Name}}"); err != nil {
@@ -440,6 +447,7 @@ func TestHTMLAndPlainTextBody(t *testing.T) {
 }
 
 func TestSMTPConfigValidation(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name    string
 		config  SMTPConfig
@@ -487,6 +495,7 @@ func TestSMTPConfigValidation(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			err := tt.config.Validate()
 			if tt.wantErr && err == nil {
 				t.Error("expected error, got nil")
@@ -553,6 +562,7 @@ func assertMessageContains(t *testing.T, msg string, expected []string) {
 }
 
 func TestBuildMessage(t *testing.T) {
+	t.Parallel()
 	sender, err := NewSMTPSender(SMTPConfig{
 		Host: "smtp.example.com",
 		Port: 587,
@@ -562,6 +572,7 @@ func TestBuildMessage(t *testing.T) {
 	}
 
 	t.Run("plain text only", func(t *testing.T) {
+		t.Parallel()
 		email := &Email{
 			From:    "sender@example.com",
 			To:      []string{"recipient@example.com"},
@@ -722,6 +733,7 @@ func TestBuildMessage(t *testing.T) {
 // --- wrapText tests ---
 
 func TestWrapText(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name     string
 		text     string
@@ -747,6 +759,7 @@ func TestWrapText(t *testing.T) {
 // --- generateUniqueID tests ---
 
 func TestGenerateUniqueID(t *testing.T) {
+	t.Parallel()
 	id1 := generateUniqueID()
 	id2 := generateUniqueID()
 
@@ -764,6 +777,7 @@ func TestGenerateUniqueID(t *testing.T) {
 // --- sanitizeFilename tests ---
 
 func TestSanitizeFilename(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name     string
 		input    string
@@ -789,6 +803,7 @@ func TestSanitizeFilename(t *testing.T) {
 // --- encodeHeader tests ---
 
 func TestEncodeHeader(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name    string
 		input   string
@@ -819,6 +834,7 @@ func TestEncodeHeader(t *testing.T) {
 // --- quotedPrintableEncode tests ---
 
 func TestQuotedPrintableEncode(t *testing.T) {
+	t.Parallel()
 	// ASCII text should pass through mostly unchanged
 	got := quotedPrintableEncode("Hello World")
 	if !strings.Contains(got, "Hello World") {
@@ -835,7 +851,9 @@ func TestQuotedPrintableEncode(t *testing.T) {
 // --- NewSMTPSender tests ---
 
 func TestNewSMTPSender(t *testing.T) {
+	t.Parallel()
 	t.Run("valid config", func(t *testing.T) {
+		t.Parallel()
 		sender, err := NewSMTPSender(SMTPConfig{
 			Host: "smtp.example.com",
 			Port: 587,
@@ -901,6 +919,7 @@ func TestNewSMTPSender(t *testing.T) {
 // --- SlogLogger tests ---
 
 func TestSlogLogger(t *testing.T) {
+	t.Parallel()
 	logger := NewSlogLogger(slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{
 		Level: slog.LevelDebug,
 	})))
@@ -922,6 +941,7 @@ func TestSlogLogger(t *testing.T) {
 // --- NoOpLogger tests ---
 
 func TestNoOpLogger(t *testing.T) {
+	t.Parallel()
 	logger := NoOpLogger{}
 
 	// These should not panic
@@ -939,7 +959,9 @@ func TestNoOpLogger(t *testing.T) {
 // --- LoadTemplateFromFile tests ---
 
 func TestLoadTemplateFromFile(t *testing.T) {
+	t.Parallel()
 	t.Run("valid file", func(t *testing.T) {
+		t.Parallel()
 		// Create a temp file
 		dir := t.TempDir()
 		path := filepath.Join(dir, "template.html")

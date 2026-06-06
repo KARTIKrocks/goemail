@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-06-06
+
+### Security
+
+- Enforce a minimum of TLS 1.2 on STARTTLS connections in both the SMTP sender
+  and the connection pool.
+- Reject custom header names that contain characters outside the RFC 5322
+  field-name set, and reject CR/LF in custom header values, when building
+  messages.
+- Strip CR/LF from email addresses that fail to parse instead of emitting them
+  unmodified into message headers.
+- Validate attachment filenames and content types for CR/LF, and default a
+  missing attachment content type to `application/octet-stream`.
+
+### Fixed
+
+- `Mailer.SendEmail` and `Mailer.SendBatch` now deep-copy the supplied email so
+  the caller's slices and maps are never mutated, and they return an error when
+  given a nil email.
+- The Mailgun provider now propagates multipart form-field write errors instead
+  of silently discarding them.
+
 ## [0.1.0] - 2026-04-19
 
 Initial public release.
@@ -14,6 +36,7 @@ Initial public release.
 ### Added
 
 #### Core
+
 - `Email` type with fluent builder API (`NewEmail`, `SetFrom`, `AddTo`, `AddCc`,
   `AddBcc`, `SetReplyTo`, `SetSubject`, `SetBody`, `SetHTMLBody`,
   `AddAttachment`, `AddHeader`, `Build`, `Validate`).
@@ -36,6 +59,7 @@ Initial public release.
 - `AddAttachment` defensively copies the caller's byte slice.
 
 #### SMTP
+
 - `SMTPSender` with `SMTPConfig` (Host, Port, Username, Password, From, UseTLS,
   Timeout, MaxRetries, RetryDelay, RetryBackoff, RateLimit).
 - STARTTLS support with `ServerName` set for hostname verification.
@@ -51,6 +75,7 @@ Initial public release.
   `client.Close`.
 
 #### Connection Pooling
+
 - Optional SMTP connection pool activated by setting `PoolSize > 0`.
 - Configurable `MaxIdleConns`, `PoolMaxLifetime`, `PoolMaxIdleTime`,
   `MaxMessages` (messages per connection before rotation), `PoolWaitTimeout`.
@@ -63,6 +88,7 @@ Initial public release.
 - `Close()` drains idle connections and signals waiters with `ErrPoolClosed`.
 
 #### Async Delivery
+
 - `AsyncSender` wrapping any `Sender` with a buffered work queue and
   configurable worker goroutines.
 - Functional options: `WithQueueSize`, `WithWorkers`, `WithAsyncLogger`,
@@ -74,6 +100,7 @@ Initial public release.
   workers, then closes the underlying sender.
 
 #### Templating
+
 - `Template` with `SetSubject`, `SetTextTemplate`, `SetHTMLTemplate`, and
   `Render(data)`. Subject uses `text/template`; HTML uses `html/template` with
   auto-escaping.
@@ -85,6 +112,7 @@ Initial public release.
   `Template`).
 
 #### Middleware Pipeline
+
 - `Middleware` type and `Chain(sender, middlewares...)` helper (first middleware
   is outermost).
 - `WithLogging(logger)` — logs send attempts, successes, and failures.
@@ -97,6 +125,7 @@ Initial public release.
   delivery as a safety net.
 
 #### Webhooks
+
 - Provider-agnostic `WebhookEvent` normalized type with `EventType`
   constants (`delivered`, `bounced`, `deferred`, `opened`, `clicked`,
   `complained`, `unsubscribed`, `dropped`).
@@ -107,6 +136,7 @@ Initial public release.
   fails (handlers must be idempotent).
 
 #### DKIM Signing (RFC 6376 / RFC 8463)
+
 - `DKIMConfig` with Domain, Selector, PrivateKey, optional `SignedHeaders`,
   `Expiration`, and per-section (header/body) canonicalization choice.
 - `SignMessage(msg, config)` produces a DKIM-Signature header prepended to the
@@ -120,6 +150,7 @@ Initial public release.
   RFC 6376 §5.4.
 
 #### MIME
+
 - Proper multipart encoding: `multipart/mixed` (with attachments),
   `multipart/alternative` (plain + HTML without attachments), and single-part
   fallbacks.
@@ -134,6 +165,7 @@ Initial public release.
   sender's domain and a `crypto/rand` identifier.
 
 #### HTML Sanitization
+
 - `Policy` with builder methods `AllowElements`, `AllowAttributes`,
   `AllowGlobalAttributes`, `AllowURLProtocols`, `StripElements`.
 - `EmailPolicy()` ships a sensible default allowlist covering common email
@@ -148,16 +180,19 @@ Initial public release.
   protocols.
 
 #### Logging
+
 - `Logger` interface (`Debug`, `Info`, `Warn`, `Error`, `With`).
 - `NoOpLogger` default implementation.
 - `SlogLogger` adapter for the standard library `log/slog`.
 
 #### Testing Support
+
 - `MockSender` with `GetSentEmails`, `GetLastEmail`, `GetEmailCount`,
   `GetEmailsTo`, `GetEmailsBySubject`, `Reset`, and `SetSendFunc` for
   injecting error scenarios.
 
 #### Provider Adapters (separate Go modules)
+
 - `providers/sendgrid` — SendGrid v3 Web API (`/v3/mail/send`), handles
   personalizations, Cc/Bcc, Reply-To, headers, and base64 attachments.
 - `providers/mailgun` — Mailgun v3 Messages API with multipart form upload;
@@ -169,11 +204,13 @@ Initial public release.
   client-kind span per send, with configurable tracer and span names.
 
 #### Examples
+
 - `examples/basic`, `examples/template`, `examples/attachment`,
   `examples/batch`, `examples/middleware`, `examples/pool`,
   `examples/testing`.
 
 #### Tooling
+
 - `Makefile` with `all`, `test`, `vet`, `lint`, `build`, `bench`, `fmt`,
   `cover`, `ci`, and `examples` targets.
 - `golangci-lint` configuration.
@@ -181,7 +218,9 @@ Initial public release.
   guidelines.
 
 ### Requirements
+
 - Go 1.26 or newer.
 
-[Unreleased]: https://github.com/KARTIKrocks/goemail/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/KARTIKrocks/goemail/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/KARTIKrocks/goemail/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/KARTIKrocks/goemail/releases/tag/v0.1.0

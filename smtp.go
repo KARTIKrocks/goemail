@@ -459,6 +459,7 @@ func (s *SMTPSender) sendDirect(ctx context.Context, addr string, auth smtp.Auth
 	if s.config.UseTLS {
 		tlsConfig := &tls.Config{
 			ServerName: s.config.Host,
+			MinVersion: tls.VersionTLS12,
 		}
 		if tlsErr := client.StartTLS(tlsConfig); tlsErr != nil {
 			return fmt.Errorf("start tls: %w", tlsErr)
