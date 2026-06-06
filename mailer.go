@@ -168,6 +168,9 @@ func (m *Mailer) SendTemplate(ctx context.Context, to []string, templateName str
 
 // SendEmail sends a custom email
 func (m *Mailer) SendEmail(ctx context.Context, email *Email) error {
+	if email == nil {
+		return fmt.Errorf("nil email")
+	}
 	e := cloneEmail(email) // deep copy to avoid mutating the caller's email
 	if e.From == "" {
 		e.From = m.from
@@ -198,6 +201,9 @@ func (m *Mailer) SendBatch(ctx context.Context, emails []*Email, concurrencyLimi
 	// Build copies with From filled in and validate each.
 	prepared := make([]*Email, len(emails))
 	for i, email := range emails {
+		if email == nil {
+			return fmt.Errorf("email %d is nil", i)
+		}
 		e := cloneEmail(email) // deep copy to avoid mutating the caller's email
 		if e.From == "" {
 			e.From = m.from

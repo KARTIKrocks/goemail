@@ -198,11 +198,15 @@ func buildRawMessage(e *Email) ([]byte, error) {
 
 		// Attachments
 		for _, att := range e.Attachments {
-			if containsCRLF(att.ContentType) {
+			contentType := att.ContentType
+			if contentType == "" {
+				contentType = "application/octet-stream"
+			}
+			if containsCRLF(contentType) {
 				return nil, fmt.Errorf("invalid attachment content-type for %q: contains CR/LF", att.Filename)
 			}
 			fmt.Fprintf(buf, "--%s\r\n", boundary)
-			fmt.Fprintf(buf, "Content-Type: %s\r\n", att.ContentType)
+			fmt.Fprintf(buf, "Content-Type: %s\r\n", contentType)
 			buf.WriteString("Content-Transfer-Encoding: base64\r\n")
 			fmt.Fprintf(buf, "Content-Disposition: %s\r\n\r\n", formatDisposition(att.Filename))
 

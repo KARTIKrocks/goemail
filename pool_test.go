@@ -403,9 +403,7 @@ func TestPoolHealthCheckFailure(t *testing.T) {
 	// But the fresh one will also fail RSET on health check if we don't
 	// restore RSET. Restore it so the fresh dial's first use works.
 	go func() {
-		waitFor(t, 100*time.Millisecond, 5*time.Millisecond, func() bool {
-			return time.Since(time.Now()) > 20*time.Millisecond
-		})
+		time.Sleep(20 * time.Millisecond)
 		srv.mu.Lock()
 		srv.failRSET = false
 		srv.mu.Unlock()

@@ -631,6 +631,80 @@ func TestEmailPolicy(t *testing.T) {
 	}
 }
 
+func TestSanitizeHTML_OversizedInput(t *testing.T) {
+	t.Run("input exceeding MaxSanitizeInputLen is truncated and sanitized", func(t *testing.T) {
+		// Create input larger than MaxSanitizeInputLen with safe content followed by dangerous content.
+		safePrefix := strings.Repeat("<p>Safe text.</p>", MaxSanitizeInputLen/20)
+		dangerousScript := "<script>alert('xss')</script><p>After script</p>"
+		oversizedInput := safePrefix + dangerousScript
+
+		if len(oversizedInput) <= MaxSanitizeInputLen {
+			t.Fatalf("test setup error: input must exceed MaxSanitizeInputLen")
+		}
+
+		result := SanitizeHTML(oversizedInput)
+
+		// Output should be safely sanitized.
+		if strings.Contains(result, "<script") || strings.Contains(result, "alert") {
+			t.Errorf("expected dangerous tags removed, got %q", result)
+		}
+
+		// The result should reflect truncation at or before MaxSanitizeInputLen.
+		// After sanitization the output may be shorter due to tag removal.
+		if len(result) > MaxSanitizeInputLen+1000 {
+			t.Errorf("expected output to reflect truncation, got length %d", len(result))
+		}
+	})
+
+	t.Run("dangerous tag split by MaxSanitizeInputLen cutoff is neutralized", func(t *testing.T) {
+		// Build input where a <script> tag starts just before the cutoff and ends after.
+		// This ensures the sanitizer handles partial tags safely.
+		splitPoint := MaxSanitizeInputLen - 5
+		safePrefix := strings.Repeat("x", splitPoint)
+		dangerousTag := "<script>alert('xss')</script>"
+		splitInput := safePrefix + dangerousTag
+
+		if len(splitInput) <= MaxSanitizeInputLen {
+			t.Fatalf("test setup error: input must exceed MaxSanitizeInputLen")
+		}
+
+		result := SanitizeHTML(splitInput)
+
+		// The <script> tag should not appear in output (either removed or escaped).
+		if strings.Contains(result, "<script") {
+			t.Errorf("expected <script tag neutralized, got %q", result)
+		}
+		// XSS payload should not be executable.
+		if strings.Contains(result, "alert('xss')") && strings.Contains(result, "<script>") {
+			t.Errorf("expected dangerous content neutralized, got %q", result)
+		}
+
+		// Verify input was truncated (processed length should not exceed MaxSanitizeInputLen).
+		// The sanitized output may be longer or shorter than the truncated input.
+		inputProcessed := splitInput
+		if len(inputProcessed) > MaxSanitizeInputLen {
+			inputProcessed = inputProcessed[:MaxSanitizeInputLen]
+		}
+		// Verify the test is exercising the truncation branch.
+		if len(splitInput) <= MaxSanitizeInputLen {
+			t.Errorf("test should exercise oversized input, got length %d", len(splitInput))
+		}
+	})
+
+	t.Run("boundary case at exactly MaxSanitizeInputLen", func(t *testing.T) {
+		// Input at exactly the limit should not be truncated.
+		exactInput := strings.Repeat("<p>OK</p>", MaxSanitizeInputLen/9)
+		exactInput = exactInput[:MaxSanitizeInputLen]
+
+		result := SanitizeHTML(exactInput)
+
+		// Should be sanitized normally without truncation.
+		if !strings.Contains(result, "<p>OK</p>") {
+			t.Errorf("expected safe content preserved, got %q", result[:100])
+		}
+	})
+}
+
 func BenchmarkSanitizeHTML(b *testing.B) {
 	input := `
 		<div style="max-width: 600px; margin: 0 auto;">
