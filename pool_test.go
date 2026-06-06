@@ -13,6 +13,19 @@ import (
 	"time"
 )
 
+// waitFor polls condition until it returns true or the timeout elapses.
+func waitFor(t *testing.T, timeout time.Duration, interval time.Duration, condition func() bool) {
+	t.Helper()
+	deadline := time.Now().Add(timeout)
+	for time.Now().Before(deadline) {
+		if condition() {
+			return
+		}
+		time.Sleep(interval)
+	}
+	t.Fatalf("waitFor timed out after %v", timeout)
+}
+
 // fakeSMTPServer is a minimal SMTP server for testing the connection pool.
 type fakeSMTPServer struct {
 	listener   net.Listener
@@ -390,7 +403,9 @@ func TestPoolHealthCheckFailure(t *testing.T) {
 	// But the fresh one will also fail RSET on health check if we don't
 	// restore RSET. Restore it so the fresh dial's first use works.
 	go func() {
-		time.Sleep(20 * time.Millisecond)
+		waitFor(t, 100*time.Millisecond, 5*time.Millisecond, func() bool {
+			return time.Since(time.Now()) > 20*time.Millisecond
+		})
 		srv.mu.Lock()
 		srv.failRSET = false
 		srv.mu.Unlock()
@@ -470,7 +485,9 @@ func TestPoolMaxLifetime(t *testing.T) {
 	p.put(pc)
 
 	// Wait for the connection to expire
-	time.Sleep(60 * time.Millisecond)
+	waitFor(t, 200*time.Millisecond, 10*time.Millisecond, func() bool {
+		return time.Since(pc.createdAt) > 50*time.Millisecond
+	})
 
 	connsBefore := srv.connCount.Load()
 

@@ -76,6 +76,25 @@ func BuildRawMessageWithDKIM(e *Email, dkim *DKIMConfig) ([]byte, error) {
 	return SignMessage(msg, dkim)
 }
 
+// containsCRLF reports whether s contains CR or LF characters.
+func containsCRLF(s string) bool {
+	return strings.ContainsAny(s, "\r\n")
+}
+
+// isValidHeaderName reports whether name contains only valid header token characters.
+func isValidHeaderName(name string) bool {
+	if name == "" {
+		return false
+	}
+	for _, r := range name {
+		// RFC 5322 field-name: visible ASCII except colon
+		if r < 33 || r > 126 || r == ':' {
+			return false
+		}
+	}
+	return true
+}
+
 // buildRawMessage builds the email message with proper MIME encoding.
 func buildRawMessage(e *Email) ([]byte, error) {
 	buf := &strings.Builder{}
@@ -117,7 +136,14 @@ func buildRawMessage(e *Email) ([]byte, error) {
 		if _, reserved := reservedHeaders[strings.ToLower(key)]; reserved {
 			continue
 		}
-		fmt.Fprintf(buf, "%s: %s\r\n", key, e.Headers[key])
+		if !isValidHeaderName(key) {
+			return nil, fmt.Errorf("invalid header name %q: contains invalid characters", key)
+		}
+		value := e.Headers[key]
+		if containsCRLF(value) {
+			return nil, fmt.Errorf("invalid header value for %q: contains CR/LF", key)
+		}
+		fmt.Fprintf(buf, "%s: %s\r\n", key, value)
 	}
 
 	// MIME headers
@@ -172,6 +198,9 @@ func buildRawMessage(e *Email) ([]byte, error) {
 
 		// Attachments
 		for _, att := range e.Attachments {
+			if containsCRLF(att.ContentType) {
+				return nil, fmt.Errorf("invalid attachment content-type for %q: contains CR/LF", att.Filename)
+			}
 			fmt.Fprintf(buf, "--%s\r\n", boundary)
 			fmt.Fprintf(buf, "Content-Type: %s\r\n", att.ContentType)
 			buf.WriteString("Content-Transfer-Encoding: base64\r\n")
@@ -250,7 +279,9 @@ func quotedPrintableEncode(s string) string {
 func formatAddress(addr string) string {
 	parsed, err := mail.ParseAddress(addr)
 	if err != nil {
-		return addr
+		// Strip CR/LF from malformed address before returning
+		sanitized := strings.NewReplacer("\r", "", "\n", "").Replace(addr)
+		return sanitized
 	}
 	if parsed.Name == "" {
 		return parsed.Address

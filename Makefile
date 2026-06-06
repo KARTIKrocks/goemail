@@ -1,4 +1,4 @@
-GOLANGCI_LINT_VERSION := v2.11.4
+GOLANGCI_LINT_VERSION := v2.11.0
 
 .PHONY: all help setup deps test test-v vet lint lint-fix build bench fmt cover clean examples ci
 
@@ -31,7 +31,7 @@ setup:
 	}
 	@command -v goimports >/dev/null 2>&1 || { \
 		echo "Installing goimports..."; \
-		go install golang.org/x/tools/cmd/goimports@latest; \
+		go install golang.org/x/tools/cmd/goimports@v0.29.0; \
 	}
 
 ## Download module dependencies
@@ -67,7 +67,7 @@ bench:
 	go test -bench=. -benchmem ./...
 
 ## Format code
-fmt:
+fmt: setup
 	gofmt -s -w .
 	goimports -w .
 

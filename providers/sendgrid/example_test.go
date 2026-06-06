@@ -27,14 +27,18 @@ func Example() {
 	}
 	defer sender.Close()
 
-	e, _ := email.NewEmail().
+	e, err := email.NewEmail().
 		SetFrom("sender@example.com").
 		AddTo("recipient@example.com").
 		SetSubject("Hello from SendGrid").
 		SetBody("This is a test email.").
 		Build()
+	if err != nil {
+		fmt.Printf("failed to build email: %v\n", err)
+		return
+	}
 
-	if err := sender.Send(context.Background(), e); err != nil {
+	if err = sender.Send(context.Background(), e); err != nil {
 		fmt.Printf("send error: %v\n", err)
 		return
 	}

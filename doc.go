@@ -72,7 +72,10 @@
 //
 // Send emails with file attachments:
 //
-//	pdfData, _ := os.ReadFile("document.pdf")
+//	pdfData, err := os.ReadFile("document.pdf")
+//	if err != nil {
+//	    log.Fatal(err)
+//	}
 //
 //	email := email.NewEmail().
 //	    SetFrom("sender@example.com").

@@ -215,6 +215,9 @@ func EmailPolicy() *Policy {
 	return p
 }
 
+// MaxSanitizeInputLen is the maximum input size (1 MB) for HTML sanitization.
+const MaxSanitizeInputLen = 1 << 20
+
 // defaultPolicy is the cached EmailPolicy instance used by SanitizeHTML.
 var defaultPolicy = EmailPolicy()
 
@@ -229,6 +232,11 @@ func SanitizeHTML(html string) string {
 func SanitizeHTMLWithPolicy(html string, p *Policy) string {
 	if html == "" {
 		return ""
+	}
+
+	// Guard against excessively large input
+	if len(html) > MaxSanitizeInputLen {
+		html = html[:MaxSanitizeInputLen]
 	}
 
 	var buf strings.Builder

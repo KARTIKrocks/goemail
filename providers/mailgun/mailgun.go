@@ -69,34 +69,52 @@ func (s *Sender) Send(ctx context.Context, e *email.Email) error {
 	w := multipart.NewWriter(&buf)
 
 	// Required fields
-	writeField(w, "from", e.From)
-	for _, addr := range e.To {
-		writeField(w, "to", addr)
+	if err := writeField(w, "from", e.From); err != nil {
+		return fmt.Errorf("mailgun: write from field: %w", err)
 	}
-	writeField(w, "subject", e.Subject)
+	for _, addr := range e.To {
+		if err := writeField(w, "to", addr); err != nil {
+			return fmt.Errorf("mailgun: write to field: %w", err)
+		}
+	}
+	if err := writeField(w, "subject", e.Subject); err != nil {
+		return fmt.Errorf("mailgun: write subject field: %w", err)
+	}
 
 	// Optional text/html
 	if e.Body != "" {
-		writeField(w, "text", e.Body)
+		if err := writeField(w, "text", e.Body); err != nil {
+			return fmt.Errorf("mailgun: write text field: %w", err)
+		}
 	}
 	if e.HTMLBody != "" {
-		writeField(w, "html", e.HTMLBody)
+		if err := writeField(w, "html", e.HTMLBody); err != nil {
+			return fmt.Errorf("mailgun: write html field: %w", err)
+		}
 	}
 
 	// Cc / Bcc
 	for _, addr := range e.Cc {
-		writeField(w, "cc", addr)
+		if err := writeField(w, "cc", addr); err != nil {
+			return fmt.Errorf("mailgun: write cc field: %w", err)
+		}
 	}
 	for _, addr := range e.Bcc {
-		writeField(w, "bcc", addr)
+		if err := writeField(w, "bcc", addr); err != nil {
+			return fmt.Errorf("mailgun: write bcc field: %w", err)
+		}
 	}
 
 	// Reply-To and custom headers
 	if e.ReplyTo != "" {
-		writeField(w, "h:Reply-To", e.ReplyTo)
+		if err := writeField(w, "h:Reply-To", e.ReplyTo); err != nil {
+			return fmt.Errorf("mailgun: write reply-to field: %w", err)
+		}
 	}
 	for key, value := range e.Headers {
-		writeField(w, "h:"+key, value)
+		if err := writeField(w, "h:"+key, value); err != nil {
+			return fmt.Errorf("mailgun: write header field: %w", err)
+		}
 	}
 
 	// Attachments. CreateFormFile would hard-code Content-Type to
@@ -150,8 +168,8 @@ func (s *Sender) Send(ctx context.Context, e *email.Email) error {
 // Close is a no-op for Mailgun (HTTP is stateless).
 func (s *Sender) Close() error { return nil }
 
-func writeField(w *multipart.Writer, key, value string) {
-	_ = w.WriteField(key, value)
+func writeField(w *multipart.Writer, key, value string) error {
+	return w.WriteField(key, value)
 }
 
 var mgQuoteEscaper = strings.NewReplacer("\\", "\\\\", `"`, "\\\"")

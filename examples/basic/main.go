@@ -29,6 +29,7 @@ func main() {
 
 	// Create context with timeout
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
 
 	// Send simple email
 	err = mailer.Send(ctx,
@@ -36,7 +37,6 @@ func main() {
 		"Hello from Go!",
 		"This is a test email sent from the goemail package.",
 	)
-	cancel()
 	mailer.Close()
 	if err != nil {
 		log.Fatalf("Failed to send email: %v", err)

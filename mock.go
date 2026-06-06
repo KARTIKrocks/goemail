@@ -6,8 +6,8 @@ import (
 )
 
 // MockSender is a mock email sender for testing.
-// It records all sent emails in memory and provides methods
-// to inspect them for test assertions.
+// It records emails in memory when sendFn succeeds (or when sendFn is nil)
+// and provides methods to inspect them for test assertions.
 type MockSender struct {
 	mu     sync.Mutex
 	emails []*Email

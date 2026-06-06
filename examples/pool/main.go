@@ -54,7 +54,7 @@ func main() {
 
 	for i, recipient := range recipients {
 		wg.Add(1)
-		go func() {
+		go func(i int, recipient string) {
 			defer wg.Done()
 
 			e := email.NewEmail().
@@ -69,7 +69,7 @@ func main() {
 				mu.Unlock()
 				log.Printf("Failed to send to %s: %v", recipient, sendErr)
 			}
-		}()
+		}(i, recipient)
 	}
 
 	wg.Wait()

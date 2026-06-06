@@ -206,6 +206,14 @@ func (e *Email) Validate() error {
 			return err
 		}
 	}
+	for _, att := range e.Attachments {
+		if strings.ContainsAny(att.ContentType, "\r\n") {
+			return fmt.Errorf("invalid attachment content-type for %q: contains CR/LF", att.Filename)
+		}
+		if strings.ContainsAny(att.Filename, "\r\n") {
+			return fmt.Errorf("invalid attachment filename: contains CR/LF")
+		}
+	}
 	return nil
 }
 
