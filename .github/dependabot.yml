@@ -1,0 +1,32 @@
+version: 2
+
+updates:
+  - package-ecosystem: "gomod"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+
+  - package-ecosystem: "gomod"
+    directory: "/providers/otelmail"
+    schedule:
+      interval: "weekly"
+
+  - package-ecosystem: "gomod"
+    directory: "/providers/mailgun"
+    schedule:
+      interval: "weekly"
+
+  - package-ecosystem: "gomod"
+    directory: "/providers/sendgrid"
+    schedule:
+      interval: "weekly"
+
+  - package-ecosystem: "gomod"
+    directory: "/providers/ses"
+    schedule:
+      interval: "weekly"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"

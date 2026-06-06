@@ -1,0 +1,153 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+#
+# CodeRabbit configuration for goemail.
+# Docs: https://docs.coderabbit.ai/reference/configuration
+# This file is validated against the schema above; most editors will autocomplete/lint it.
+
+language: en-US
+early_access: false
+tone_instructions: >-
+  Reviewing a production, security-sensitive Go email library. Be precise and
+  concise. Prioritize correctness, security (header injection, DKIM/crypto, TLS),
+  concurrency safety, and idiomatic Go. Skip style that golangci-lint enforces.
+
+reviews:
+  # "assertive" surfaces more substantive findings than "chill" — appropriate for a
+  # library others depend on. Switch to "chill" if reviews feel too noisy.
+  profile: assertive
+
+  # Don't block merges on CodeRabbit's own status; CI (tests + golangci-lint) is the gate.
+  request_changes_workflow: false
+
+  high_level_summary: true
+  high_level_summary_in_walkthrough: false
+  auto_title_instructions: >-
+    Use Conventional Commit style (feat:, fix:, docs:, refactor:, test:, build:,
+    chore:) matching the prefix of the PR's primary change.
+
+  poem: true
+  review_status: true
+  collapse_walkthrough: false
+  changed_files_summary: true
+  sequence_diagrams: true
+  assess_linked_issues: true
+  related_issues: true
+  related_prs: true
+  suggested_labels: true
+  suggested_reviewers: true
+
+  labeling_instructions:
+    - label: security
+      instructions: >-
+        Apply when changes touch sanitize.go, dkim.go, webhook.go, smtp.go, mime.go,
+        TLS configuration, credential handling, or input validation.
+    - label: providers
+      instructions: Apply when changes touch anything under providers/.
+    - label: breaking-change
+      instructions: >-
+        Apply when an exported identifier (function, method, type, field, or const)
+        in the public API is renamed, removed, or has its signature changed.
+
+  # Limit auto-review noise: only review the source that matters.
+  path_filters:
+    - "!**/*.sum"
+    - "!**/go.work.sum"
+    - "!**/vendor/**"
+    - "!**/testdata/**"
+    - "!goemail-website/**"
+    - "!**/*.min.js"
+    - "!**/*.svg"
+    - "!**/dist/**"
+    - "!**/node_modules/**"
+
+  path_instructions:
+    - path: "**/*.go"
+      instructions: >-
+        Idiomatic Go review. Verify errors are wrapped with %w and never silently
+        ignored (except where golangci-lint already excludes). Check context.Context
+        is propagated and honored for cancellation/timeouts. Flag data races: any
+        shared state accessed from goroutines (pools, async workers, middleware) must
+        be synchronized. Ensure resources (net.Conn, files, response bodies, tls
+        connections) are closed, ideally via defer. Prefer table-driven patterns and
+        the standard library. Confirm exported API changes are backward compatible.
+    - path: "{sanitize,dkim,webhook,smtp,mime}.go"
+      instructions: >-
+        Security-critical path. Scrutinize for email header/CRLF injection, address
+        validation bypass, and MIME boundary issues. For DKIM, verify canonicalization,
+        signing/verification correctness, and constant-time comparison of signatures.
+        For SMTP/TLS, ensure secure defaults (no InsecureSkipVerify in non-test paths,
+        STARTTLS handled correctly). For webhooks, verify signature/HMAC validation and
+        replay protection.
+    - path: "**/*_test.go"
+      instructions: >-
+        Prefer table-driven tests with subtests (t.Run). Use t.Parallel() where safe.
+        Tests must be deterministic — no real network calls, no time.Sleep-based timing
+        assumptions; use mocks/fakes and contexts. Cover error paths and edge cases,
+        not just the happy path.
+    - path: "providers/**"
+      instructions: >-
+        Provider adapters should be consistent with each other and the core Sender
+        interface. Verify HTTP requests honor the passed context, response bodies are
+        always closed, non-2xx responses become meaningful errors, and no API keys or
+        credentials are logged.
+    - path: "examples/**"
+      instructions: >-
+        Examples are documentation. Optimize for clarity and correctness over
+        completeness; do not flag missing error handling or production hardening that
+        would distract from the concept being demonstrated.
+    - path: ".github/workflows/**"
+      instructions: >-
+        Verify actions are pinned to a major version or SHA, least-privilege
+        permissions are set, and no secrets are exposed in logs.
+
+  auto_review:
+    enabled: true
+    auto_incremental_review: true
+    drafts: false
+    base_branches:
+      - main
+    # Skip auto-review for routine dependency bumps; they're already CI-gated.
+    ignore_title_keywords:
+      - "build(deps)"
+      - "bump"
+
+  finishing_touches:
+    docstrings:
+      enabled: true
+    unit_tests:
+      enabled: true
+
+  # Tooling CodeRabbit runs as part of review. golangci-lint reuses the repo config.
+  tools:
+    golangci-lint:
+      enabled: true
+      config_file: .golangci.yml
+    gitleaks:
+      enabled: true
+    markdownlint:
+      enabled: true
+    yamllint:
+      enabled: true
+    actionlint:
+      enabled: true
+    shellcheck:
+      enabled: true
+
+chat:
+  auto_reply: true
+
+knowledge_base:
+  opt_out: false
+  learnings:
+    scope: auto
+  issues:
+    scope: auto
+  pull_requests:
+    scope: auto
+  # Treat these as authoritative project conventions when reviewing.
+  code_guidelines:
+    enabled: true
+    filePatterns:
+      - "CONTRIBUTING.md"
+      - "CLAUDE.md"
+      - ".golangci.yml"
