@@ -3,7 +3,7 @@ module github.com/KARTIKrocks/goemail/providers/ses
 go 1.26
 
 require (
-	github.com/KARTIKrocks/goemail v0.1.0
+	github.com/KARTIKrocks/goemail v0.2.0
 	github.com/aws/aws-sdk-go-v2 v1.41.12
 	github.com/aws/aws-sdk-go-v2/config v1.32.23
 	github.com/aws/aws-sdk-go-v2/service/sesv2 v1.62.0
