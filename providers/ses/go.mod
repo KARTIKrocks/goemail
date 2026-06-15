@@ -6,7 +6,7 @@ require (
 	github.com/KARTIKrocks/goemail v0.2.0
 	github.com/aws/aws-sdk-go-v2 v1.42.0
 	github.com/aws/aws-sdk-go-v2/config v1.32.25
-	github.com/aws/aws-sdk-go-v2/service/sesv2 v1.62.3
+	github.com/aws/aws-sdk-go-v2/service/sesv2 v1.62.4
 )
 
 require (
