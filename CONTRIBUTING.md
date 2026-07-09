@@ -174,6 +174,46 @@ Before submitting a PR, ensure:
 - [ ] No breaking changes (or clearly documented)
 - [ ] Examples updated if API changed
 
+## Module layout and `go.work`
+
+Each provider under `providers/` is its own Go module, so importing `goemail`
+never drags in the AWS SDK, OpenTelemetry, and friends. Each one `require`s a
+published version of the root module.
+
+The committed `go.work` at the repo root overrides that requirement with the
+working tree. Without it the providers would compile against the *published*
+root even here, and a breaking change to the core would pass CI while silently
+breaking every provider. No `go.mod` in this repo carries a `replace`
+directive — `go.work` is the only place local resolution is configured, and it
+is ignored entirely when someone depends on these modules.
+
+To reproduce a consumer's build, set `GOWORK=off`.
+
+## Releasing
+
+Tag the root module first, then point each provider at that tag. Everything
+here is safe to commit to `main` — `go.work` keeps local builds on the working
+tree no matter which root version the providers require.
+
+```bash
+git tag vX.Y.Z && git push origin vX.Y.Z    # root module first
+
+for mod in providers/*; do
+  (cd "$mod" && go mod edit -require github.com/KARTIKrocks/goemail@vX.Y.Z)
+done
+make tidy && make test
+
+GOWORK=off make test    # what a consumer actually compiles
+
+git commit -am 'Pin providers to vX.Y.Z'
+for mod in providers/*; do git tag "$mod/vX.Y.Z"; done
+git push origin main --tags
+```
+
+The provider bump has to be its own commit: a module tag resolves to a commit,
+and the proxy reads *that commit's* `go.mod`. Tagging before the bump would
+publish a provider still requiring the old root.
+
 ## Questions?
 
 Feel free to open an issue for questions or discussions!
