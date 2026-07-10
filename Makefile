@@ -3,9 +3,8 @@ GOIMPORTS_VERSION := v0.45.0
 
 MODULES = . ./providers/mailgun ./providers/otelmail ./providers/sendgrid ./providers/ses
 SUB_MODULES = ./providers/mailgun ./providers/otelmail ./providers/sendgrid ./providers/ses
-MODULE_PATH = github.com/KARTIKrocks/goemail
 
-.PHONY: all help setup deps ci test test-v test-race coverage lint lint-fix fix fmt fmt-check vet tidy build bench examples clean release-prep
+.PHONY: all help setup deps ci test test-v test-race coverage lint lint-fix fix fmt fmt-check vet tidy build bench examples clean
 
 all: tidy fmt vet lint build test
 
@@ -31,7 +30,6 @@ help:
 	@echo "  bench         - Run benchmarks (all modules)"
 	@echo "  examples      - Build all examples"
 	@echo "  clean         - Remove build/coverage artifacts"
-	@echo "  release-prep  - Pin sub-modules to a release version (VERSION=vX.Y.Z)"
 
 ## Install development tools (skips if already present)
 setup:
@@ -157,24 +155,3 @@ clean:
 	@rm -f coverage*.out coverage.txt coverage.html
 	@rm -rf dist/ build/ bin/
 
-## Prepare sub-modules for release: pin the required parent version.
-## Usage: make release-prep VERSION=v0.2.0
-## Run this AFTER the root module tag for VERSION exists, then commit and tag sub-modules.
-release-prep:
-ifndef VERSION
-	$(error VERSION is required. Usage: make release-prep VERSION=v0.2.0)
-endif
-	@for mod in $(SUB_MODULES); do \
-		echo "==> release-prep $$mod"; \
-		(cd $$mod && go mod edit -require $(MODULE_PATH)@$(VERSION)) || exit 1; \
-	done
-	@echo ""
-	@echo "Done! Sub-modules now require $(MODULE_PATH)@$(VERSION)"
-	@echo "Next steps:"
-	@echo "  git add -A && git commit -m 'Prepare release $(VERSION)'"
-	@echo "  git tag $(VERSION)"
-	@echo "  git tag providers/mailgun/$(VERSION)"
-	@echo "  git tag providers/otelmail/$(VERSION)"
-	@echo "  git tag providers/sendgrid/$(VERSION)"
-	@echo "  git tag providers/ses/$(VERSION)"
-	@echo "  git push origin main --tags"

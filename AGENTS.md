@@ -18,7 +18,7 @@ This is a **multi-module repo with five independent modules**, each with its own
 
 Providers are separate modules so that core users never transitively pull in the AWS SDK, OTel, etc. The `Makefile` `MODULES` variable drives every per-module loop — when adding a module, update `MODULES`/`SUB_MODULES` there.
 
-Sub-modules depend on the root module by version. On release, the root is tagged first, then `make release-prep VERSION=vX.Y.Z` pins each sub-module's required parent version before they are tagged (see the `release-prep` target for the exact tag/push sequence).
+Sub-modules depend on the root module by version, and the committed `go.work` overrides that with the working tree — so a breaking change to the root fails the provider tests instead of passing CI against the last published version. No `go.mod` here carries a `replace` directive. Use `GOWORK=off` to reproduce a consumer's build. Releasing is manual: tag the root first, bump each provider's `require` to that tag, then tag the providers (see CONTRIBUTING.md).
 
 ## Commands
 

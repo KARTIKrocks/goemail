@@ -1,0 +1,27 @@
+// Every module in this repository, wired together for local development.
+//
+// The provider modules each `require` a published version of the root module.
+// Without this workspace they would compile against that published version even
+// here, so a breaking change to the root would pass CI while silently breaking
+// every provider. The workspace overrides that requirement with the working
+// tree.
+//
+// No module in this repo carries a `replace` directive; this file is the only
+// place local resolution is configured. It is committed so CI uses it too, and
+// it is ignored entirely when someone depends on any of these modules.
+//
+// Releasing bumps each provider's `require` to the new root tag (see
+// CONTRIBUTING.md). That stays on main safely, precisely because the workspace
+// still points local builds at the working tree.
+//
+// To reproduce a consumer's build instead, set GOWORK=off.
+
+go 1.26
+
+use (
+	.
+	./providers/mailgun
+	./providers/otelmail
+	./providers/sendgrid
+	./providers/ses
+)
