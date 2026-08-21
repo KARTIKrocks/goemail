@@ -1,0 +1,25 @@
+{
+  "files": [
+    {
+      "path": "AGENTS.md",
+      "description": "Repository conventions: multi-module layout, build/test/lint commands, architecture of the Sender interface and its wrappers (Mailer, pool, AsyncSender, middleware), docs-site workflow."
+    },
+    {
+      "path": "doc.go",
+      "description": "Package-level overview: features, quick start, pooling, middleware, DKIM signing, async sending, provider adapters, security notes."
+    },
+    {
+      "path": "email.go",
+      "description": "The Sender interface and the Email builder/validator that every backend and middleware operates on, including the CRLF-injection checks other rules reference.",
+      "scope": ["smtp.go", "mailer.go", "async.go", "middleware.go", "providers/**/*.go"]
+    },
+    {
+      "path": ".golangci.yml",
+      "description": "The linter ruleset already enforced in CI; avoid duplicating what golangci-lint already flags."
+    },
+    {
+      "path": "CHANGELOG.md",
+      "description": "Documents real past security fixes (CRLF injection, TLS 1.2 enforcement, Mailer deep-copy bug) that motivate several of the scoped rules."
+    }
+  ]
+}
