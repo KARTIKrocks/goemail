@@ -1,0 +1,64 @@
+{
+  "strictness": 2,
+  "commentTypes": ["logic", "syntax", "style"],
+  "triggerOnUpdates": true,
+  "statusCheck": true,
+  "ignorePatterns": "**/*.sum\n**/go.work.sum\n**/vendor/**\n**/testdata/**\ngoemail-website/**\n**/*.min.js\n**/*.svg\n**/dist/**\n**/node_modules/**",
+  "instructions": "goemail is a production Go email library (module github.com/KARTIKrocks/goemail, package name email). Everything composes around the Sender interface (Send, Close); Mailer, SMTPSender, MockSender, middleware, the connection pool, and AsyncSender all implement or wrap it. This is a five-module repo: root (dependency-light: only golang.org/x/sync and golang.org/x/time) plus providers/sendgrid, providers/mailgun, providers/ses, providers/otelmail as separate modules so core users don't pull in the AWS SDK / OTel transitively. Treat this as a security-sensitive library: it builds raw SMTP/MIME messages and signs them with DKIM, both classic injection and crypto-correctness risk surfaces. Prioritize correctness, security (header/CRLF injection, DKIM signing, TLS defaults), and concurrency safety (pool, async workers, middleware) over style — skip anything golangci-lint already enforces. See AGENTS.md for repo conventions and .greptile/rules.md for pattern rationale grounded in this library's own security fixes.",
+  "rules": [
+    {
+      "id": "header-crlf-injection",
+      "rule": "Any code path that writes a caller- or template-supplied string into an email header or the raw message (custom headers, Subject, From/To/Cc/Bcc/Reply-To, attachment filenames/content-types) must reject or strip CR/LF before it reaches the wire, matching the existing protection in Email.Validate/AddHeader. Never add a header-writing path that bypasses AddHeader's canonicalization and CRLF check, and never assume net/mail.ParseAddress having already run makes a value safe to emit unmodified — a value that fails to parse must be sanitized, not passed through.",
+      "scope": ["email.go", "smtp.go", "mime.go", "dkim.go"],
+      "severity": "high"
+    },
+    {
+      "id": "dkim-canonicalization-correctness",
+      "rule": "DKIM signing (dkim.go) implements RFC 6376/8463 canonicalization (relaxed/simple header and body canon), header folding/unfolding, and body-hash trailing-CRLF handling. A change to canonicalizeHeader, canonicalizeBody, removeTrailingEmptyLines, buildDKIMTagList, or signData must preserve exact RFC-specified byte behavior — a subtly wrong canonicalization produces a signature that verifies for the wrong bytes, or fails silently at the receiving mail server with no local test failure. Flag any such change that isn't backed by a spec citation or a test vector.",
+      "scope": ["dkim.go", "dkim_test.go"],
+      "severity": "high"
+    },
+    {
+      "id": "tls-secure-defaults",
+      "rule": "SMTP/TLS connection setup (SMTPSender and the pool's dialer) must not allow InsecureSkipVerify or a TLS version below 1.2 outside of a test-only code path, and STARTTLS must be negotiated before AUTH is sent. Flag any relaxation of these defaults even if gated behind a config flag, unless the flag is explicitly named/documented as test/insecure-only.",
+      "scope": ["smtp.go", "pool.go"],
+      "severity": "high"
+    },
+    {
+      "id": "pool-connection-lifecycle",
+      "rule": "Every *pooledConn obtained from smtpPool.get/dial/tryGetIdle/waitForConn must be returned to the pool or closed on every path, including error and cancellation paths — a leaked pooled connection is a slow resource exhaustion bug, not a style nit. A waiter registered in waitForConn must be reliably removed (cancelWaiter) so a canceled caller doesn't leave a stale channel the pool later tries to hand a connection to.",
+      "scope": ["pool.go", "smtp.go"],
+      "severity": "high"
+    },
+    {
+      "id": "async-worker-lifecycle",
+      "rule": "AsyncSender's worker goroutines must have a visible termination path tied to Close() (a closed channel or context they select on), and Close must not return until in-flight/queued work has been drained or explicitly discarded per its documented contract. A goroutine that can outlive Close(), or a Send/SendWait after Close that blocks forever instead of returning ErrQueueClosed, is a bug.",
+      "scope": ["async.go"],
+      "severity": "high"
+    },
+    {
+      "id": "mailer-defensive-copy",
+      "rule": "Mailer.Send/SendEmail/SendBatch must deep-copy the caller-supplied Email (cloneEmail) before mutating or handing it to a Sender, and must not let one goroutine's in-flight send observe mutations from a concurrent caller reusing the same Email/slice/map. This was a real bug (see CHANGELOG 0.2.0) — flag any new Mailer method or middleware that reads/writes an *Email without going through the existing copy path.",
+      "scope": ["mailer.go", "async.go", "middleware.go"],
+      "severity": "medium"
+    },
+    {
+      "id": "sentinel-errors",
+      "rule": "New failure conditions should use or extend the existing sentinel-error style (var Err... = errors.New(\"email: ...\")) and the Error type (Op/From/To/wrapped err), checked via errors.Is/errors.As — not ad hoc string-matched errors. Provider adapters must translate their HTTP/SDK errors into this same shape rather than leaking a provider-specific error type across the Sender boundary.",
+      "scope": ["**/*.go"],
+      "severity": "medium"
+    },
+    {
+      "id": "provider-http-hygiene",
+      "rule": "Provider adapters (providers/sendgrid, providers/mailgun, providers/ses) must propagate the caller's context into every HTTP/SDK call, always close response bodies, treat non-2xx responses as errors with enough detail to debug (not swallowed), and never log API keys, secrets, or full message bodies.",
+      "scope": ["providers/**/*.go"],
+      "severity": "medium"
+    },
+    {
+      "id": "root-module-dependency-purity",
+      "rule": "The root module (files directly in the repository root) must stay dependency-light: only the standard library, golang.org/x/sync, and golang.org/x/time. A new third-party dependency (an SDK, an HTTP client wrapper, etc.) belongs in a providers/ sub-module, never in root go.mod.",
+      "scope": ["*.go", "go.mod"],
+      "severity": "high"
+    }
+  ]
+}

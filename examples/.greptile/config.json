@@ -1,0 +1,4 @@
+{
+  "disabledRules": ["root-module-dependency-purity"],
+  "instructions": "Examples are documentation, not the library or its coverage target. Optimize for clarity over completeness — do not flag missing error handling or production hardening that would distract from the concept being demonstrated. Still flag anything that would teach a reader an actively unsafe pattern: hardcoded real credentials, disabling TLS verification, or bypassing the header/CRLF sanitization this library provides."
+}
