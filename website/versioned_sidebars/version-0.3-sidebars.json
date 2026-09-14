@@ -1,0 +1,55 @@
+{
+  "docsSidebar": [
+    "intro",
+    "getting-started",
+    {
+      "type": "category",
+      "label": "Core",
+      "collapsed": false,
+      "items": [
+        "mailer",
+        "email-builder",
+        "smtp",
+        "templates"
+      ]
+    },
+    {
+      "type": "category",
+      "label": "Composition",
+      "collapsed": false,
+      "items": [
+        "middleware",
+        "async"
+      ]
+    },
+    {
+      "type": "category",
+      "label": "Delivery",
+      "collapsed": false,
+      "items": [
+        "providers",
+        "dkim",
+        "webhooks"
+      ]
+    },
+    {
+      "type": "category",
+      "label": "Operations",
+      "collapsed": false,
+      "items": [
+        "reliability",
+        "metrics",
+        "logging"
+      ]
+    },
+    {
+      "type": "category",
+      "label": "Quality & Security",
+      "collapsed": false,
+      "items": [
+        "testing",
+        "security"
+      ]
+    }
+  ]
+}
