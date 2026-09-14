@@ -19,7 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Documentation site at https://kartikrocks.github.io/goemail/, built with
+- Documentation site at <https://kartikrocks.github.io/goemail/>, built with
   Docusaurus and published from `website/`.
 - `SECURITY.md` describing the vulnerability reporting process.
 - `govulncheck` and CodeQL scanning in CI, with expanded `golangci-lint`
@@ -249,7 +249,6 @@ Initial public release.
 
 - Go 1.26 or newer.
 
-[Unreleased]: https://github.com/KARTIKrocks/goemail/compare/v0.3.1...HEAD
 [0.3.1]: https://github.com/KARTIKrocks/goemail/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/KARTIKrocks/goemail/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/KARTIKrocks/goemail/compare/v0.1.0...v0.2.0

@@ -1,5 +1,5 @@
-github.com/KARTIKrocks/goemail v0.2.0 h1:AxCnN0ZOQt+P9tPPXZhaPc/HsC44XVaVTIQkU9izFZ4=
-github.com/KARTIKrocks/goemail v0.2.0/go.mod h1:auvZkGSclBijwWR6qiW9CMWcmS4eMf0rGlKSQQ1km9M=
+github.com/KARTIKrocks/goemail v0.3.1 h1:xr3NaaotSMfl0b0S8MD7T67lDv94nrUZHX1aXHiBzPg=
+github.com/KARTIKrocks/goemail v0.3.1/go.mod h1:pd8VYzAy1e65DHB4bthSHHsCTy5gE47i2VJ+w69qGUY=
 github.com/aws/aws-sdk-go-v2 v1.47.0 h1:0jsHallhJCeaU0Ko48c/3FK1ctOQ7NpzggxriJOQ8MQ=
 github.com/aws/aws-sdk-go-v2 v1.47.0/go.mod h1:bttEH6JqnUL8LepvDVfdrds/fZ5bCIxzpe3abyUrhDU=
 github.com/aws/aws-sdk-go-v2/config v1.33.4 h1:FzvkXKSzwqHni4U7nDigHg4jjtqMpVUuHgmZfSoJVQ0=
