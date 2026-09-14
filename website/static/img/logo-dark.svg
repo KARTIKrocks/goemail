@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="goemail">
+  <title>goemail</title>
+  <path d="M6 18 a5 5 0 0 1 5 -5 h30 a5 5 0 0 1 5 5 v22 a5 5 0 0 1 -5 5 h-30 a5 5 0 0 1 -5 -5 z"
+        fill="none" stroke="#3b82f6" stroke-width="4" stroke-linejoin="round"/>
+  <path d="M7 15 L26 32 L45 15" fill="none" stroke="#3b82f6" stroke-width="4"
+        stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="46" cy="40" r="12" fill="#22d3ee"/>
+  <path d="M40.5 40 L44.5 44 L52 34.5" fill="none" stroke="#fff" stroke-width="3.2"
+        stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

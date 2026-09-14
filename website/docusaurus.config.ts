@@ -52,7 +52,27 @@ const includedVersions = fastBuild
 const config: Config = {
   title: 'goemail',
   tagline: 'Production-ready Go email package',
-  favicon: 'img/favicon.svg',
+  // .ico carries 16/32/48 frames for the browsers that ignore SVG favicons;
+  // the SVG below is preferred by everything current and stays sharp on hidpi.
+  favicon: 'img/favicon.ico',
+
+  headTags: [
+    {
+      tagName: 'link',
+      attributes: {
+        rel: 'icon',
+        type: 'image/svg+xml',
+        href: `${BASE_URL}img/favicon.svg`,
+      },
+    },
+    {
+      tagName: 'link',
+      attributes: {
+        rel: 'apple-touch-icon',
+        href: `${BASE_URL}img/apple-touch-icon.png`,
+      },
+    },
+  ],
 
   future: {
     v4: true,
@@ -114,12 +134,21 @@ const config: Config = {
   ],
 
   themeConfig: {
+    image: 'img/goemail-social-card.png',
     colorMode: {
       defaultMode: 'light',
       respectPrefersColorScheme: true,
     },
     navbar: {
       title: 'goemail',
+      logo: {
+        alt: 'goemail',
+        src: 'img/logo.svg',
+        // The mark uses the same primary token as the theme, so it needs the
+        // dark-mode value (#3b82f6) on a slate ground the way every other
+        // primary-colored element does.
+        srcDark: 'img/logo-dark.svg',
+      },
       items: [
         {
           type: 'docSidebar',

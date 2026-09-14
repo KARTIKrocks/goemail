@@ -34,6 +34,25 @@
     // API reference-style docs repeat the same section name under different
     // symbols — several `### Parameters` headings on one page is correct
     // structure, not a mistake. Only flag a duplicate among direct siblings.
-    "MD024": { "siblings_only": true }
+    "MD024": { "siblings_only": true },
+
+    // The centred README header (logo, badges, tagline) has no Markdown
+    // equivalent. Allow the presentational tags actually in use and keep the
+    // rule on, so anything beyond this list still gets flagged.
+    "MD033": {
+      "allowed_elements": [
+        "a",
+        "b",
+        "br",
+        "details",
+        "div",
+        "h1",
+        "img",
+        "p",
+        "picture",
+        "source",
+        "summary"
+      ]
+    }
   }
 }
