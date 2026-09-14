@@ -190,11 +190,11 @@ Full guides live at **[kartikrocks.github.io/goemail](https://kartikrocks.github
 | [Async Sending](https://kartikrocks.github.io/goemail/docs/async) | Buffered worker queue for non-blocking sends |
 | [Reliability](https://kartikrocks.github.io/goemail/docs/reliability) | Retry logic, rate limiting, context timeouts |
 | [DKIM Signing](https://kartikrocks.github.io/goemail/docs/dkim) | RSA-SHA256 / Ed25519-SHA256 signing (RFC 6376/8463) |
-| [Provider Adapters](https://kartikrocks.github.io/goemail/docs/providers) | SendGrid, Mailgun, and AWS SES via HTTP APIs |
+| [Provider Adapters](https://kartikrocks.github.io/goemail/docs/providers) | SendGrid, Mailgun, and AWS SES via HTTP APIs, plus the OpenTelemetry tracing middleware |
 | [Webhooks](https://kartikrocks.github.io/goemail/docs/webhooks) | Parsing provider delivery-event webhooks |
-| [Metrics](https://kartikrocks.github.io/goemail/docs/metrics) | `MetricsCollector` and the Prometheus/OTel path |
+| [Metrics](https://kartikrocks.github.io/goemail/docs/metrics) | The `MetricsCollector` interface and a worked Prometheus example |
 | [Logging](https://kartikrocks.github.io/goemail/docs/logging) | Bringing your own logger |
-| [Security](https://kartikrocks.github.io/goemail/docs/security) | Header injection protection, address validation, sanitization |
+| [Security](https://kartikrocks.github.io/goemail/docs/security) | Credential handling, header injection protection, address validation, App Passwords |
 | [Testing](https://kartikrocks.github.io/goemail/docs/testing) | Unit-testing code that sends email with `MockSender` |
 
 Exact type signatures are generated from source on
