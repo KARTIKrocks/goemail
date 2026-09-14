@@ -57,16 +57,12 @@ linters:
     paths:
       - goemail-website/
     rules:
+      # Tests may ignore returned errors, assert on unwrapped errors, ignore
+      # response-body cleanup, use insecure TLS configs for local test
+      # servers, and build requests without a context; none of that ships
+      # to consumers.
       - linters:
           - errcheck
-        path: _test\.go
-      - linters:
-          - errcheck
-        path: examples/
-      # Tests may assert on unwrapped errors, ignore response-body cleanup,
-      # use insecure TLS configs for local test servers, and build requests
-      # without a context; none of that ships to consumers.
-      - linters:
           - bodyclose
           - errorlint
           - gosec
@@ -76,6 +72,7 @@ linters:
         path: _test\.go
       # Examples are illustrative, not part of the public API surface.
       - linters:
+          - errcheck
           - gosec
           - perfsprint
         path: examples/

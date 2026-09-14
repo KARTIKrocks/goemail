@@ -27,7 +27,7 @@ Run from the repo root. The `Makefile` loops these across all modules.
 - `make all` — tidy, fmt, vet, lint, build, test. **Run this to verify work before reporting completion.**
 - `make test` — `go test -count=1 ./...` across all modules.
 - `make test-race` — tests with the race detector.
-- `make ci` — what CI runs: `fmt-check vet lint test-race`.
+- `make ci` — what CI runs: `fmt-check vet lint test-race tidy-check vuln`.
 - `make lint` / `make fix` — golangci-lint; `fix` also runs fmt + `--fix`.
 - `make fmt` — `gofmt -s` + `goimports`. `make fmt-check` fails on unformatted/unordered imports (CI gate).
 - `make coverage` — merged coverage report across all modules.

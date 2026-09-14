@@ -5,7 +5,7 @@ GOVULNCHECK_VERSION := v1.8.0
 MODULES = . ./providers/mailgun ./providers/otelmail ./providers/sendgrid ./providers/ses
 SUB_MODULES = ./providers/mailgun ./providers/otelmail ./providers/sendgrid ./providers/ses
 
-.PHONY: all help setup deps ci test test-v test-race coverage lint lint-fix fix fmt fmt-check vet tidy tidy-check vuln print-golangci-lint-version print-govulncheck-version build bench examples clean
+.PHONY: all help setup setup-golangci-lint setup-goimports setup-govulncheck deps ci test test-v test-race coverage lint lint-fix fix fmt fmt-check vet tidy tidy-check vuln print-golangci-lint-version build bench examples clean
 
 all: tidy fmt vet lint build test
 
@@ -34,16 +34,25 @@ help:
 	@echo "  examples      - Build all examples"
 	@echo "  clean         - Remove build/coverage artifacts"
 
-## Install development tools (skips if already present)
-setup:
+## Install all development tools (skips each if already present)
+setup: setup-golangci-lint setup-goimports setup-govulncheck
+
+## Install golangci-lint, skipping if already present
+setup-golangci-lint:
 	@command -v golangci-lint >/dev/null 2>&1 || { \
 		echo "Installing golangci-lint $(GOLANGCI_LINT_VERSION)..."; \
 		go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION); \
 	}
+
+## Install goimports, skipping if already present
+setup-goimports:
 	@command -v goimports >/dev/null 2>&1 || { \
 		echo "Installing goimports $(GOIMPORTS_VERSION)..."; \
 		go install golang.org/x/tools/cmd/goimports@$(GOIMPORTS_VERSION); \
 	}
+
+## Install govulncheck, skipping if already present
+setup-govulncheck:
 	@command -v govulncheck >/dev/null 2>&1 || { \
 		echo "Installing govulncheck $(GOVULNCHECK_VERSION)..."; \
 		go install golang.org/x/vuln/cmd/govulncheck@$(GOVULNCHECK_VERSION); \
@@ -104,26 +113,26 @@ coverage:
 	@echo "Full report: go tool cover -html=coverage.out"
 
 ## Run linter across all modules
-lint: setup
+lint: setup-golangci-lint
 	@for mod in $(MODULES); do \
 		echo "==> Linting $$mod"; \
 		(cd $$mod && golangci-lint run --timeout=5m ./...) || exit 1; \
 	done
 
 ## Run golangci-lint with auto-fix (root module)
-lint-fix: setup
+lint-fix: setup-golangci-lint
 	golangci-lint run --fix ./...
 
 ## Fix code formatting and linting issues
 fix: fmt lint-fix
 
 ## Format code
-fmt: setup
+fmt: setup-goimports
 	@gofmt -s -w .
 	@goimports -w .
 
 ## Check formatting without modifying files (used in CI)
-fmt-check: setup
+fmt-check: setup-goimports
 	@test -z "$$(gofmt -s -l . | tee /dev/stderr)" || { echo "Unformatted files found. Run 'make fmt'."; exit 1; }
 	@test -z "$$(goimports -l . | tee /dev/stderr)" || { echo "Unordered imports found. Run 'make fmt'."; exit 1; }
 
@@ -148,15 +157,20 @@ tidy-check:
 	if [ -n "$$status" ]; then \
 		echo "go.mod/go.sum already modified; commit or stash before running tidy-check"; \
 		exit 1; \
-	fi
-	@$(MAKE) --no-print-directory tidy
-	@if ! git diff --quiet -- '*go.mod' '*go.sum'; then \
+	fi; \
+	$(MAKE) --no-print-directory tidy; tidy_status=$$?; \
+	changed=$$(git diff --name-only -- '*go.mod' '*go.sum'); \
+	if [ $$tidy_status -ne 0 ]; then \
+		[ -n "$$changed" ] && git checkout -- $$changed; \
+		exit $$tidy_status; \
+	fi; \
+	if [ -n "$$changed" ]; then \
 		echo "go.mod/go.sum are not tidy — run 'make tidy' and commit:"; \
 		git diff --stat -- '*go.mod' '*go.sum'; \
-		git checkout -- '*go.mod' '*go.sum'; \
+		git checkout -- $$changed; \
 		exit 1; \
-	fi
-	@echo "all modules tidy"
+	fi; \
+	echo "all modules tidy"
 
 ## Scan all modules for known vulnerabilities, filtered to advisories the code
 ## actually reaches. Mirrors the `vuln` CI job, which gates merges.
@@ -166,7 +180,7 @@ tidy-check:
 ## installed, so it can fail locally on a green branch when your Go is a patch
 ## release behind the one CI pins. That is a real finding about your machine,
 ## not a false positive.
-vuln: setup
+vuln: setup-govulncheck
 	@for mod in $(MODULES); do \
 		echo "==> Scanning $$mod"; \
 		(cd $$mod && govulncheck ./...) || exit 1; \
@@ -177,10 +191,6 @@ vuln: setup
 ## workflow and this file cannot drift apart.
 print-golangci-lint-version:
 	@echo $(GOLANGCI_LINT_VERSION)
-
-## Print the pinned scanner version, for the same reason.
-print-govulncheck-version:
-	@echo $(GOVULNCHECK_VERSION)
 
 ## Run benchmarks across all modules
 bench:
