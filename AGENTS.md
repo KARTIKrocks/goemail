@@ -78,6 +78,6 @@ A new provider implements `email.Sender` in its own sub-module and is passed to 
 
 ## Conventions
 
-- Go 1.26. Errors are sentinel `var Err... = errors.New("email: ...")`; check with `errors.Is`.
+- Go 1.27. Errors are sentinel `var Err... = errors.New("email: ...")`; check with `errors.Is`.
 - Keep the **root module dependency-light** — if a feature needs a third-party SDK, put it in a `providers/` sub-module.
 - The docs site lives on its own `website` branch (not tracked on `main`), in `goemail-website/` — React 19 + TypeScript + Vite + Tailwind v4 + Shiki. It's unrelated to the Go library; build/deploy with `npm run deploy` (builds and publishes `dist/` to the `gh-pages` branch). Ignore it for Go work.
