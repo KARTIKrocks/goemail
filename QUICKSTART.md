@@ -64,7 +64,7 @@ func main() {
 
 For Gmail, you need to use an App Password instead of your regular password:
 
-1. Go to https://myaccount.google.com/apppasswords
+1. Go to <https://myaccount.google.com/apppasswords>
 2. Enable 2-Step Verification if not already enabled
 3. Select "Mail" and generate a password
 4. Use this generated password in your config
@@ -270,7 +270,7 @@ email.SMTPConfig{
 ## Getting Help
 
 - 📖 Documentation: See README.md for full docs
-- 🐛 Issues: https://github.com/KARTIKrocks/goemail/issues
-- 💬 Discussions: https://github.com/KARTIKrocks/goemail/discussions
+- 🐛 Issues: <https://github.com/KARTIKrocks/goemail/issues>
+- 💬 Discussions: <https://github.com/KARTIKrocks/goemail/discussions>
 
 Happy emailing! 📧

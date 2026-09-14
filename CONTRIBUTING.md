@@ -114,7 +114,7 @@ func TestFeature(t *testing.T) {
 
 Use clear, descriptive commit messages:
 
-```
+```text
 Add rate limiting to SMTP sender
 
 - Implement token bucket rate limiter
@@ -124,7 +124,7 @@ Add rate limiting to SMTP sender
 
 ## Project Structure
 
-```
+```text
 goemail/
 ├── doc.go              # Package documentation
 ├── email.go            # Core Email type, builder, Sender interface

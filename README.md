@@ -173,7 +173,7 @@ config := email.SMTPConfig{
 }
 ```
 
-**Note:** Enable 2FA and create an App Password at https://myaccount.google.com/apppasswords
+**Note:** Enable 2FA and create an App Password at <https://myaccount.google.com/apppasswords>
 
 #### SendGrid
 
@@ -690,7 +690,7 @@ if err != nil {
 Don't use your regular Gmail password. Generate an App Password:
 
 1. Enable 2-Step Verification
-2. Go to https://myaccount.google.com/apppasswords
+2. Go to <https://myaccount.google.com/apppasswords>
 3. Select "Mail" and generate password
 4. Use the generated password in your config
 
@@ -747,8 +747,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 📞 Support
 
-- 🐛 Issues: https://github.com/KARTIKrocks/goemail/issues
-- 📖 Documentation: https://pkg.go.dev/github.com/KARTIKrocks/goemail
+- 🐛 Issues: <https://github.com/KARTIKrocks/goemail/issues>
+- 📖 Documentation: <https://pkg.go.dev/github.com/KARTIKrocks/goemail>
 
 ## ⭐ Star History
 

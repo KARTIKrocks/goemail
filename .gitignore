@@ -34,9 +34,6 @@ go.work.sum
 *~
 .DS_Store
 
-# website
-goemail-website
-
 # Environment files
 .env
 .env.local

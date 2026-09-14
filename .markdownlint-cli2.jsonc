@@ -1,0 +1,29 @@
+// Structural linting for every Markdown file in the repo — the root README,
+// the contributor/security docs, and the website source.
+//
+// Scope note: this checks *structure*, not prose. It catches the things that
+// render wrong or read wrong in a diff — malformed tables, skipped heading
+// levels, list indentation that silently changes nesting, unclosed fences. It
+// deliberately has no opinion on wording.
+{
+  "globs": ["**/*.md"],
+
+  // Without this, the scan walks straight into gitignored working
+  // directories — website/node_modules, website/dist, local scratch notes —
+  // and reports failures for files that are not part of the project.
+  "gitignore": true,
+
+  "config": {
+    "default": true,
+
+    // Long links and Go/TS identifiers in code spans routinely exceed a
+    // fixed column limit and cannot be wrapped without breaking what they
+    // mean, so the wrapping stays a convention rather than a gate.
+    "MD013": false,
+
+    // API reference-style docs repeat the same section name under different
+    // symbols — several `### Parameters` headings on one page is correct
+    // structure, not a mistake. Only flag a duplicate among direct siblings.
+    "MD024": { "siblings_only": true }
+  }
+}

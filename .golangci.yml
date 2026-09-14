@@ -55,7 +55,7 @@ linters:
       require-specific: true
   exclusions:
     paths:
-      - goemail-website/
+      - website/
     rules:
       # Tests may ignore returned errors, assert on unwrapped errors, ignore
       # response-body cleanup, use insecure TLS configs for local test
