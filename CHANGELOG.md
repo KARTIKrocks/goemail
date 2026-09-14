@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.1] - 2026-09-14
+
+### Fixed
+
+- Remove a duplicate `.github/pull_request_template.md` that collided
+  case-insensitively with `.github/PULL_REQUEST_TEMPLATE.md`. The collision
+  made Go's module-zip creation fail, so `v0.3.0` could not be fetched via
+  `go get` or the module proxy at all. **Do not use `v0.3.0`** — it never
+  successfully published a checksum to sum.golang.org.
+
 ## [0.3.0] - 2026-09-14
 
 ### Added
@@ -239,7 +249,8 @@ Initial public release.
 
 - Go 1.26 or newer.
 
-[Unreleased]: https://github.com/KARTIKrocks/goemail/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/KARTIKrocks/goemail/compare/v0.3.1...HEAD
+[0.3.1]: https://github.com/KARTIKrocks/goemail/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/KARTIKrocks/goemail/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/KARTIKrocks/goemail/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/KARTIKrocks/goemail/releases/tag/v0.1.0
