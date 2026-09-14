@@ -10,10 +10,6 @@ type Feature = {
   readonly description: string;
 };
 
-type Capability = {
-  readonly capability: string;
-};
-
 // Kept in sync with the feature list in the repository README.
 const FEATURES = [
   {
@@ -81,16 +77,16 @@ const FEATURES = [
 // Everything goemail provides that raw net/smtp leaves to you. Kept in sync
 // with the "Why goemail?" table in the repository README.
 const CAPABILITIES = [
-  { capability: 'Retry with exponential backoff' },
-  { capability: 'Connection pooling for high throughput' },
-  { capability: 'Rate limiting' },
-  { capability: 'DKIM signing (RSA-SHA256 / Ed25519-SHA256)' },
-  { capability: 'HTML templates, attachments, batch sending' },
-  { capability: 'Provider HTTP adapters (SendGrid, Mailgun, AWS SES)' },
-  { capability: 'Middleware (logging, metrics, hooks, recovery)' },
-  { capability: 'Header injection protection, address validation' },
-  { capability: 'Async sending with a buffered worker queue' },
-] as const satisfies readonly Capability[];
+  'Retry with exponential backoff',
+  'Connection pooling for high throughput',
+  'Rate limiting',
+  'DKIM signing (RSA-SHA256 / Ed25519-SHA256)',
+  'HTML templates, attachments, batch sending',
+  'Provider HTTP adapters (SendGrid, Mailgun, AWS SES)',
+  'Middleware (logging, metrics, hooks, recovery)',
+  'Header injection protection, address validation',
+  'Async sending with a buffered worker queue',
+] as const satisfies readonly string[];
 
 const INSTALL_COMMAND = 'go get github.com/KARTIKrocks/goemail';
 
@@ -169,7 +165,7 @@ function WhyGoemail(): ReactNode {
               </tr>
             </thead>
             <tbody>
-              {CAPABILITIES.map(({ capability }) => (
+              {CAPABILITIES.map((capability) => (
                 <tr key={capability}>
                   <th scope="row">{capability}</th>
                   <td>
