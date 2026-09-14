@@ -1,36 +1,58 @@
 {
   "name": "website",
-  "private": true,
   "version": "0.0.0",
-  "type": "module",
+  "private": true,
   "scripts": {
-    "dev": "vite",
-    "build": "tsc -b && vite build",
-    "lint": "eslint .",
-    "preview": "vite preview",
-    "deploy": "npm run build && npx gh-pages -d dist"
+    "docusaurus": "docusaurus",
+    "start": "cross-env DOCS_FAST_BUILD=true docusaurus start",
+    "start:all": "docusaurus start",
+    "build": "docusaurus build",
+    "build:fast": "cross-env DOCS_FAST_BUILD=true docusaurus build",
+    "swizzle": "docusaurus swizzle",
+    "clear": "docusaurus clear",
+    "serve": "docusaurus serve",
+    "write-translations": "docusaurus write-translations",
+    "write-heading-ids": "docusaurus write-heading-ids",
+    "cut-version": "node scripts/cut-version.mjs",
+    "typecheck": "tsc",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write .",
+    "format": "biome format --write .",
+    "check": "npm run lint && npm run typecheck && npm run build:fast"
   },
   "dependencies": {
-    "@tailwindcss/vite": "^4.2.4",
-    "react": "^19.2.0",
-    "react-dom": "^19.2.0",
-    "shiki": "^4.0.0",
-    "tailwindcss": "^4.2.4"
+    "@docusaurus/core": "3.10.2",
+    "@docusaurus/faster": "3.10.2",
+    "@docusaurus/preset-classic": "3.10.2",
+    "@mdx-js/react": "^3.0.0",
+    "clsx": "^2.0.0",
+    "prism-react-renderer": "^2.3.0",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8"
   },
   "devDependencies": {
-    "@eslint/js": "^9.39.1",
-    "@types/node": "^24.10.1",
-    "@types/react": "^19.2.7",
-    "@types/react-dom": "^19.2.3",
-    "@vitejs/plugin-react": "^6.0.1",
-    "eslint": "^9.39.1",
-    "eslint-plugin-react-hooks": "^7.0.1",
-    "eslint-plugin-react-refresh": "^0.4.24",
-    "gh-pages": "^6.3.0",
-    "globals": "^16.5.0",
+    "@biomejs/biome": "2.5.12",
+    "@docusaurus/module-type-aliases": "3.10.2",
+    "@docusaurus/tsconfig": "3.10.2",
+    "@docusaurus/types": "3.10.2",
+    "@types/react": "^19.2.18",
+    "cross-env": "^10.1.0",
     "markdownlint-cli2": "^0.23.2",
-    "typescript": "~5.9.3",
-    "typescript-eslint": "^8.48.0",
-    "vite": "^8.0.10"
+    "typescript": "^7.0.2"
+  },
+  "browserslist": {
+    "production": [
+      ">0.5%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 3 chrome version",
+      "last 3 firefox version",
+      "last 5 safari version"
+    ]
+  },
+  "engines": {
+    "node": ">=20.0"
   }
 }

@@ -80,4 +80,4 @@ A new provider implements `email.Sender` in its own sub-module and is passed to 
 
 - Go 1.27. Errors are sentinel `var Err... = errors.New("email: ...")`; check with `errors.Is`.
 - Keep the **root module dependency-light** — if a feature needs a third-party SDK, put it in a `providers/` sub-module.
-- The docs site lives in `website/` on `main` — React 19 + TypeScript + Vite + Tailwind v4 + Shiki. It's unrelated to the Go library; CI builds and deploys it to GitHub Pages on push to `main` (see `.github/workflows/docs.yml`). Ignore it for Go work.
+- The docs site lives in `website/` on `main` — Docusaurus (TypeScript + Markdown). It's unrelated to the Go library; CI builds and deploys it to GitHub Pages on push to `main` (see `.github/workflows/docs.yml`). Ignore it for Go work. Docs are versioned per release — see `website/VERSIONING.md` before editing an already-released page.
