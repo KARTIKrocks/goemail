@@ -1,10 +1,11 @@
-GOLANGCI_LINT_VERSION := v2.12.2
-GOIMPORTS_VERSION := v0.45.0
+GOLANGCI_LINT_VERSION := v2.13.2
+GOIMPORTS_VERSION := v0.50.0
+GOVULNCHECK_VERSION := v1.8.0
 
 MODULES = . ./providers/mailgun ./providers/otelmail ./providers/sendgrid ./providers/ses
 SUB_MODULES = ./providers/mailgun ./providers/otelmail ./providers/sendgrid ./providers/ses
 
-.PHONY: all help setup deps ci test test-v test-race coverage lint lint-fix fix fmt fmt-check vet tidy build bench examples clean
+.PHONY: all help setup deps ci test test-v test-race coverage lint lint-fix fix fmt fmt-check vet tidy tidy-check vuln print-golangci-lint-version print-govulncheck-version build bench examples clean
 
 all: tidy fmt vet lint build test
 
@@ -26,6 +27,8 @@ help:
 	@echo "  fmt           - Format code (gofmt -s + goimports)"
 	@echo "  fmt-check     - Verify formatting without modifying files"
 	@echo "  tidy          - Run go mod tidy (all modules)"
+	@echo "  tidy-check    - Fail if go.mod/go.sum are not tidy (all modules)"
+	@echo "  vuln          - Run govulncheck (all modules)"
 	@echo "  build         - Build all packages (all modules)"
 	@echo "  bench         - Run benchmarks (all modules)"
 	@echo "  examples      - Build all examples"
@@ -41,6 +44,10 @@ setup:
 		echo "Installing goimports $(GOIMPORTS_VERSION)..."; \
 		go install golang.org/x/tools/cmd/goimports@$(GOIMPORTS_VERSION); \
 	}
+	@command -v govulncheck >/dev/null 2>&1 || { \
+		echo "Installing govulncheck $(GOVULNCHECK_VERSION)..."; \
+		go install golang.org/x/vuln/cmd/govulncheck@$(GOVULNCHECK_VERSION); \
+	}
 
 ## Download module dependencies across all modules
 deps:
@@ -49,8 +56,9 @@ deps:
 		(cd $$mod && go mod download) || exit 1; \
 	done
 
-## CI: run lint and tests with race detector (used in CI pipelines)
-ci: fmt-check vet lint test-race
+## CI: run lint, vet, tests with race detector, and the vulnerability/tidy
+## gates (used in CI pipelines)
+ci: fmt-check vet lint test-race tidy-check vuln
 
 ## Build all modules
 build:
@@ -132,6 +140,47 @@ tidy:
 		echo "==> Tidying $$mod"; \
 		(cd $$mod && go mod tidy) || exit 1; \
 	done
+
+## Fail if any go.mod/go.sum is not tidy, without leaving the change behind.
+## Suitable for CI, where a stale go.sum should block the merge.
+tidy-check:
+	@status=$$(git status --porcelain -- '*go.mod' '*go.sum'); \
+	if [ -n "$$status" ]; then \
+		echo "go.mod/go.sum already modified; commit or stash before running tidy-check"; \
+		exit 1; \
+	fi
+	@$(MAKE) --no-print-directory tidy
+	@if ! git diff --quiet -- '*go.mod' '*go.sum'; then \
+		echo "go.mod/go.sum are not tidy — run 'make tidy' and commit:"; \
+		git diff --stat -- '*go.mod' '*go.sum'; \
+		git checkout -- '*go.mod' '*go.sum'; \
+		exit 1; \
+	fi
+	@echo "all modules tidy"
+
+## Scan all modules for known vulnerabilities, filtered to advisories the code
+## actually reaches. Mirrors the `vuln` CI job, which gates merges.
+##
+## Needs network access — the advisory database is fetched on every run. This
+## also scans the standard library of whichever Go toolchain you have
+## installed, so it can fail locally on a green branch when your Go is a patch
+## release behind the one CI pins. That is a real finding about your machine,
+## not a false positive.
+vuln: setup
+	@for mod in $(MODULES); do \
+		echo "==> Scanning $$mod"; \
+		(cd $$mod && govulncheck ./...) || exit 1; \
+	done
+
+## Print the pinned linter version. CI resolves golangci-lint-action's version
+## input from this rather than hardcoding a second copy of the number, so the
+## workflow and this file cannot drift apart.
+print-golangci-lint-version:
+	@echo $(GOLANGCI_LINT_VERSION)
+
+## Print the pinned scanner version, for the same reason.
+print-govulncheck-version:
+	@echo $(GOVULNCHECK_VERSION)
 
 ## Run benchmarks across all modules
 bench:
