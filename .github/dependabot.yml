@@ -26,6 +26,23 @@ updates:
     schedule:
       interval: "weekly"
 
+  # The documentation site. Grouped on purpose: Docusaurus pulls in a large
+  # transitive tree, and ungrouped weekly updates would bury the Go module PRs
+  # that actually affect what users import. The Docs workflow builds the site
+  # on every PR, so a bad bump fails before merge.
+  - package-ecosystem: "npm"
+    directory: "/website"
+    schedule:
+      interval: "weekly"
+    groups:
+      docusaurus:
+        patterns:
+          - "@docusaurus/*"
+          - "@mdx-js/*"
+      website:
+        patterns:
+          - "*"
+
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:

@@ -1,0 +1,58 @@
+// Structural linting for every Markdown file in the repo — the root README,
+// the contributor/security docs, and the website source.
+//
+// Scope note: this checks *structure*, not prose. It catches the things that
+// render wrong or read wrong in a diff — malformed tables, skipped heading
+// levels, list indentation that silently changes nesting, unclosed fences. It
+// deliberately has no opinion on wording.
+{
+  "globs": ["**/*.md"],
+
+  // Without this, the scan walks straight into gitignored working
+  // directories — website/node_modules, website/build, local scratch notes —
+  // and reports failures for files that are not part of the project.
+  "gitignore": true,
+
+  "ignores": ["website/build/**", "website/.docusaurus/**"],
+
+  "config": {
+    "default": true,
+
+    // Long links and Go/TS identifiers in code spans routinely exceed a
+    // fixed column limit and cannot be wrapped without breaking what they
+    // mean, so the wrapping stays a convention rather than a gate.
+    "MD013": false,
+
+    // Docusaurus pages carry the page title in front matter, then open with
+    // an `# Heading`. Without this both rules read that as a second/missing
+    // h1. Verified against the built HTML: exactly one <h1> per page, so the
+    // default behaviour here is a false positive rather than a real
+    // duplicate.
+    "MD025": { "front_matter_title": "" },
+    "MD041": { "front_matter_title": "" },
+
+    // API reference-style docs repeat the same section name under different
+    // symbols — several `### Parameters` headings on one page is correct
+    // structure, not a mistake. Only flag a duplicate among direct siblings.
+    "MD024": { "siblings_only": true },
+
+    // The centred README header (logo, badges, tagline) has no Markdown
+    // equivalent. Allow the presentational tags actually in use and keep the
+    // rule on, so anything beyond this list still gets flagged.
+    "MD033": {
+      "allowed_elements": [
+        "a",
+        "b",
+        "br",
+        "details",
+        "div",
+        "h1",
+        "img",
+        "p",
+        "picture",
+        "source",
+        "summary"
+      ]
+    }
+  }
+}

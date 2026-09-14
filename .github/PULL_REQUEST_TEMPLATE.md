@@ -1,3 +1,4 @@
+<!-- markdownlint-disable-next-line MD041 -->
 ## Summary
 
 <!-- Brief description of what this PR does -->

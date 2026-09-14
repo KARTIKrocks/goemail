@@ -97,6 +97,36 @@ jobs:
     - name: Run govulncheck
       run: make vuln
 
+  # Structural linting for every Markdown file in the repo. This lives here
+  # rather than in the Docs workflow because that one is path-filtered to
+  # website/**, so a change to the root README, CONTRIBUTING.md, or
+  # QUICKSTART.md would never trigger it. Config and rule rationale:
+  # .markdownlint-cli2.jsonc.
+  docs-lint:
+    name: Lint (Markdown)
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v7
+
+    - name: Set up Node
+      uses: actions/setup-node@v7
+      with:
+        node-version: '22'
+        cache: npm
+        cache-dependency-path: website/package-lock.json
+
+    - name: Install
+      working-directory: website
+      run: npm ci
+
+    # Run from the repository root, not website/. The config globs every .md
+    # in the repo and globs resolve against the working directory, so running
+    # this from website/ would silently check only the site's own pages.
+    - name: Lint Markdown
+      run: website/node_modules/.bin/markdownlint-cli2
+
   # THIS IS THE ONLY JOB THAT SHOULD BE A REQUIRED STATUS CHECK.
   #
   # Requiring the other jobs directly is brittle: if the test matrix ever
@@ -112,7 +142,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     if: always()
-    needs: [ test, lint, vuln ]
+    needs: [ test, lint, vuln, docs-lint ]
     steps:
       - name: Fail if any dependency did not succeed
         if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')

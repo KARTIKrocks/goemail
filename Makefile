@@ -5,7 +5,11 @@ GOVULNCHECK_VERSION := v1.8.0
 MODULES = . ./providers/mailgun ./providers/otelmail ./providers/sendgrid ./providers/ses
 SUB_MODULES = ./providers/mailgun ./providers/otelmail ./providers/sendgrid ./providers/ses
 
-.PHONY: all help setup setup-golangci-lint setup-goimports setup-govulncheck deps ci test test-v test-race coverage lint lint-fix fix fmt fmt-check vet tidy tidy-check vuln print-golangci-lint-version build bench examples clean
+# The Markdown linter. Versioned in website/package.json rather than pinned
+# here, so Dependabot keeps it current along with the rest of the docs toolchain.
+MARKDOWNLINT := website/node_modules/.bin/markdownlint-cli2
+
+.PHONY: all help setup setup-golangci-lint setup-goimports setup-govulncheck deps ci test test-v test-race coverage lint lint-fix lint-docs lint-docs-fix fix fmt fmt-check vet tidy tidy-check vuln print-golangci-lint-version build bench examples clean
 
 all: tidy fmt vet lint build test
 
@@ -23,6 +27,8 @@ help:
 	@echo "  vet           - Run go vet (all modules)"
 	@echo "  lint          - Run golangci-lint (all modules)"
 	@echo "  lint-fix      - Run golangci-lint with --fix (root module)"
+	@echo "  lint-docs     - Lint every Markdown file in the repo"
+	@echo "  lint-docs-fix - Lint Markdown and apply automatic fixes"
 	@echo "  fix           - fmt + lint-fix"
 	@echo "  fmt           - Format code (gofmt -s + goimports)"
 	@echo "  fmt-check     - Verify formatting without modifying files"
@@ -67,7 +73,7 @@ deps:
 
 ## CI: run lint, vet, tests with race detector, and the vulnerability/tidy
 ## gates (used in CI pipelines)
-ci: fmt-check vet lint test-race tidy-check vuln
+ci: fmt-check vet lint test-race tidy-check vuln lint-docs
 
 ## Build all modules
 build:
@@ -122,6 +128,21 @@ lint: setup-golangci-lint
 ## Run golangci-lint with auto-fix (root module)
 lint-fix: setup-golangci-lint
 	golangci-lint run --fix ./...
+
+## Lint every Markdown file in the repo — the docs site, the README, and the
+## contributor/security policies. Config and rationale live in
+## .markdownlint-cli2.jsonc. Needs Node; the binary comes from website/, which
+## is the only npm project here.
+lint-docs: $(MARKDOWNLINT)
+	@website/node_modules/.bin/markdownlint-cli2
+
+## Lint Markdown and apply the fixes it can make automatically.
+lint-docs-fix: $(MARKDOWNLINT)
+	@website/node_modules/.bin/markdownlint-cli2 --fix
+
+$(MARKDOWNLINT):
+	@echo "Installing website dependencies (needed for the Markdown linter)..."
+	@cd website && npm ci
 
 ## Fix code formatting and linting issues
 fix: fmt lint-fix

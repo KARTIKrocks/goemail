@@ -1,14 +1,35 @@
-# 📧 goemail
+<!-- The centred logo block opens the file, so there is no h1 on line 1. -->
+<!-- markdownlint-disable-next-line MD041 -->
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="website/static/img/logo-dark.svg">
+    <img src="website/static/img/logo.svg" alt="goemail" width="104" height="104">
+  </picture>
+</p>
 
-[![Go Reference](https://pkg.go.dev/badge/github.com/KARTIKrocks/goemail.svg)](https://pkg.go.dev/github.com/KARTIKrocks/goemail)
-[![Go Report Card](https://goreportcard.com/badge/github.com/KARTIKrocks/goemail)](https://goreportcard.com/report/github.com/KARTIKrocks/goemail)
-[![Go Version](https://img.shields.io/github/go-mod/go-version/KARTIKrocks/goemail)](go.mod)
-[![CI](https://github.com/KARTIKrocks/goemail/actions/workflows/ci.yml/badge.svg)](https://github.com/KARTIKrocks/goemail/actions/workflows/ci.yml)
-[![GitHub tag](https://img.shields.io/github/v/tag/KARTIKrocks/goemail)](https://github.com/KARTIKrocks/goemail/releases)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![codecov](https://codecov.io/gh/KARTIKrocks/goemail/branch/main/graph/badge.svg)](https://codecov.io/gh/KARTIKrocks/goemail)
+<h1 align="center">goemail</h1>
 
-Production-ready email package for Go with SMTP support, templating, and retry logic.
+<p align="center">
+  Production-ready email package for Go with SMTP support, templating,
+  retries, connection pooling, DKIM signing, and provider adapters for
+  SendGrid, Mailgun, and AWS SES.
+</p>
+
+<p align="center">
+  <a href="https://pkg.go.dev/github.com/KARTIKrocks/goemail"><img src="https://pkg.go.dev/badge/github.com/KARTIKrocks/goemail.svg" alt="Go Reference"></a>
+  <a href="https://goreportcard.com/report/github.com/KARTIKrocks/goemail"><img src="https://goreportcard.com/badge/github.com/KARTIKrocks/goemail" alt="Go Report Card"></a>
+  <a href="go.mod"><img src="https://img.shields.io/github/go-mod/go-version/KARTIKrocks/goemail" alt="Go Version"></a>
+  <a href="https://github.com/KARTIKrocks/goemail/actions/workflows/ci.yml"><img src="https://github.com/KARTIKrocks/goemail/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://github.com/KARTIKrocks/goemail/releases"><img src="https://img.shields.io/github/v/tag/KARTIKrocks/goemail" alt="GitHub tag"></a>
+  <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT"></a>
+  <a href="https://codecov.io/gh/KARTIKrocks/goemail"><img src="https://codecov.io/gh/KARTIKrocks/goemail/branch/main/graph/badge.svg" alt="codecov"></a>
+</p>
+
+<p align="center">
+  <b><a href="https://kartikrocks.github.io/goemail/">Documentation</a></b> ·
+  <b><a href="https://pkg.go.dev/github.com/KARTIKrocks/goemail">API Reference</a></b> ·
+  <b><a href="CHANGELOG.md">Changelog</a></b>
+</p>
 
 ## ✨ Features
 
@@ -173,7 +194,7 @@ config := email.SMTPConfig{
 }
 ```
 
-**Note:** Enable 2FA and create an App Password at https://myaccount.google.com/apppasswords
+**Note:** Enable 2FA and create an App Password at <https://myaccount.google.com/apppasswords>
 
 #### SendGrid
 
@@ -690,7 +711,7 @@ if err != nil {
 Don't use your regular Gmail password. Generate an App Password:
 
 1. Enable 2-Step Verification
-2. Go to https://myaccount.google.com/apppasswords
+2. Go to <https://myaccount.google.com/apppasswords>
 3. Select "Mail" and generate password
 4. Use the generated password in your config
 
@@ -747,8 +768,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 📞 Support
 
-- 🐛 Issues: https://github.com/KARTIKrocks/goemail/issues
-- 📖 Documentation: https://pkg.go.dev/github.com/KARTIKrocks/goemail
+- 🐛 Issues: <https://github.com/KARTIKrocks/goemail/issues>
+- 📖 Documentation: <https://pkg.go.dev/github.com/KARTIKrocks/goemail>
 
 ## ⭐ Star History
 
