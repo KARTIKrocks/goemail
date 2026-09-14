@@ -1,22 +1,32 @@
+<!-- A PR body is a form, not a document; its sections start at h2 by design. -->
 <!-- markdownlint-disable-next-line MD041 -->
 ## Summary
 
-<!-- Brief description of what this PR does -->
+<!-- Brief description of what this PR does and why -->
+
+## Motivation
+
+<!-- Why is this change needed? Link to related issues -->
+
+Fixes #
 
 ## Changes
 
-<!-- Bulleted list of key changes -->
+<!-- List the key changes made -->
 
 -
 
-## Related issues
+## Test Plan
 
-<!-- Link any related issues: Fixes #123, Closes #456 -->
+<!-- How was this tested? What should reviewers run/check? -->
+
+- [ ] `make all` passes (tidy, fmt, vet, lint, build, test)
 
 ## Checklist
 
-- [ ] Code passes `make all` (fmt, vet, lint, build, tests)
-- [ ] New code has tests
-- [ ] Documentation updated (godoc, README if user-facing)
-- [ ] CHANGELOG.md updated (for user-facing changes)
-- [ ] No breaking changes (or clearly documented)
+- [ ] Tests added or updated for changed behavior
+- [ ] No breaking changes — or breaking changes described below
+
+### Breaking Changes
+
+<!-- If applicable, describe what breaks and how to migrate -->
