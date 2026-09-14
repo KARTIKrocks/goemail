@@ -54,11 +54,20 @@ reviews:
     - "!**/go.work.sum"
     - "!**/vendor/**"
     - "!**/testdata/**"
-    - "!goemail-website/**"
     - "!**/*.min.js"
     - "!**/*.svg"
     - "!**/dist/**"
     - "!**/node_modules/**"
+    - "!**/package-lock.json"
+    # Frozen snapshots of website/docs taken at release time. A docs change
+    # lands in website/docs only — snapshots are produced by cut-version.mjs
+    # and are never hand-edited, so a suggestion here is unactionable: a
+    # published snapshot documents the behaviour of a shipped version, and
+    # changing it rewrites history for users still on it.
+    - "!website/versioned_docs/**"
+    - "!website/versioned_sidebars/**"
+    # Generated raster assets and the logo SVGs; nothing to review as text.
+    - "!website/static/**"
 
   path_instructions:
     - path: "**/*.go"
@@ -95,6 +104,18 @@ reviews:
         Examples are documentation. Optimize for clarity and correctness over
         completeness; do not flag missing error handling or production hardening that
         would distract from the concept being demonstrated.
+    - path: "website/docs/**"
+      instructions: >-
+        Docusaurus source for the unreleased docs. Verify every Go snippet compiles
+        against the current API and that option/field names match the exported
+        identifiers exactly — a wrong name here is a support burden, not a typo. This
+        site is versioned by snapshot, not per release: additive changes are marked
+        inline instead of being snapshotted, so check that anything documenting a new
+        API carries its version marker — `_0.3+_` appended to a table's description
+        cell, `_Added in 0.3._` opening a prose paragraph, or a trailing `// 0.3+`
+        comment inside a code block. Behaviour that changed takes `_Changed in 0.3._`
+        plus a line on what it was before. See website/VERSIONING.md rules 1 and 2.
+        Do not suggest edits to website/versioned_docs; those are frozen snapshots.
     - path: ".github/workflows/**"
       instructions: >-
         Verify actions are pinned to a major version or SHA, least-privilege
@@ -149,5 +170,5 @@ knowledge_base:
     enabled: true
     filePatterns:
       - "CONTRIBUTING.md"
-      - "CLAUDE.md"
+      - "AGENTS.md"
       - ".golangci.yml"

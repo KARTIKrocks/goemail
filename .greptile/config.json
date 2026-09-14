@@ -3,7 +3,7 @@
   "commentTypes": ["logic", "syntax", "style"],
   "triggerOnUpdates": true,
   "statusCheck": true,
-  "ignorePatterns": "**/*.sum\n**/go.work.sum\n**/vendor/**\n**/testdata/**\ngoemail-website/**\n**/*.min.js\n**/*.svg\n**/dist/**\n**/node_modules/**",
+  "ignorePatterns": "**/*.sum\n**/go.work.sum\n**/vendor/**\n**/testdata/**\n**/*.min.js\n**/*.svg\n**/dist/**\n**/node_modules/**\n**/package-lock.json\nwebsite/versioned_docs/**\nwebsite/versioned_sidebars/**\nwebsite/static/**",
   "instructions": "goemail is a production Go email library (module github.com/KARTIKrocks/goemail, package name email). Everything composes around the Sender interface (Send, Close); Mailer, SMTPSender, MockSender, middleware, the connection pool, and AsyncSender all implement or wrap it. This is a five-module repo: root (dependency-light: only golang.org/x/sync and golang.org/x/time) plus providers/sendgrid, providers/mailgun, providers/ses, providers/otelmail as separate modules so core users don't pull in the AWS SDK / OTel transitively. Treat this as a security-sensitive library: it builds raw SMTP/MIME messages and signs them with DKIM, both classic injection and crypto-correctness risk surfaces. Prioritize correctness, security (header/CRLF injection, DKIM signing, TLS defaults), and concurrency safety (pool, async workers, middleware) over style — skip anything golangci-lint already enforces. See AGENTS.md for repo conventions and .greptile/rules.md for pattern rationale grounded in this library's own security fixes.",
   "rules": [
     {
@@ -59,6 +59,12 @@
       "rule": "The root module (files directly in the repository root) must stay dependency-light: only the standard library, golang.org/x/sync, and golang.org/x/time. A new third-party dependency (an SDK, an HTTP client wrapper, etc.) belongs in a providers/ sub-module, never in root go.mod.",
       "scope": ["*.go", "go.mod"],
       "severity": "high"
+    },
+    {
+      "id": "website-docs-version-markers",
+      "rule": "A documented API addition on this page must carry a version marker in one of these exact forms: '_X.Y+_' appended to a table cell's description, '_Added in X.Y._' opening a prose paragraph, or a trailing '// X.Y+' comment inside a code block. Documented behaviour that changed must use '_Changed in X.Y._' followed by one line describing the prior behaviour. See website/VERSIONING.md rules 1 and 2. Never suggest an edit to website/versioned_docs/ — those are frozen release snapshots.",
+      "scope": ["website/docs/**/*.md"],
+      "severity": "medium"
     }
   ]
 }

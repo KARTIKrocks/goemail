@@ -20,6 +20,11 @@
     {
       "path": "CHANGELOG.md",
       "description": "Documents real past security fixes (CRLF injection, TLS 1.2 enforcement, Mailer deep-copy bug) that motivate several of the scoped rules."
+    },
+    {
+      "path": "website/VERSIONING.md",
+      "description": "Authoritative rules for the docs site's version-marker and snapshot conventions — check documentation changes against these, not just the website-docs-version-markers rule summary.",
+      "scope": ["website/docs/**/*.md"]
     }
   ]
 }

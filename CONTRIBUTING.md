@@ -156,8 +156,12 @@ goemail/
 │   ├── mailgun/
 │   ├── ses/
 │   └── otelmail/
+├── website/            # Docusaurus docs site (npm project, not part of the Go module)
+│   ├── docs/           # Unreleased docs — tracks main
+│   └── versioned_docs/ # Frozen snapshots cut at release time
 ├── README.md
 ├── CONTRIBUTING.md
+├── SECURITY.md
 ├── LICENSE
 └── go.mod
 ```
