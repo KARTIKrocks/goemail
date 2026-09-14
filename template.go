@@ -125,7 +125,7 @@ func (t *Template) WithSanitizationPolicy(p *Policy) *Template {
 // LoadTemplateFromFile loads a template from a file.
 // The file content is used as the HTML template.
 func LoadTemplateFromFile(name, path string) (*Template, error) {
-	content, err := os.ReadFile(path)
+	content, err := os.ReadFile(path) //nolint:gosec // path is caller-supplied by design, like os.ReadFile itself
 	if err != nil {
 		return nil, err
 	}

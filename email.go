@@ -211,7 +211,7 @@ func (e *Email) Validate() error {
 			return fmt.Errorf("invalid attachment content-type for %q: contains CR/LF", att.Filename)
 		}
 		if strings.ContainsAny(att.Filename, "\r\n") {
-			return fmt.Errorf("invalid attachment filename: contains CR/LF")
+			return errors.New("invalid attachment filename: contains CR/LF")
 		}
 	}
 	return nil

@@ -1166,7 +1166,7 @@ func TestLoadTemplatesFromDir(t *testing.T) {
 	})
 }
 
-func TestLoadTemplatesFromFS(t *testing.T) { //nolint:gocyclo
+func TestLoadTemplatesFromFS(t *testing.T) { //nolint:gocyclo // table of subtests, not actually complex control flow
 	t.Run("with DirFS", func(t *testing.T) {
 		dir := t.TempDir()
 		os.WriteFile(filepath.Join(dir, "order.html"), []byte("<p>Order #{{.ID}}</p>"), 0644)

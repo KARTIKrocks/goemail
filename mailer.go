@@ -2,6 +2,7 @@ package email
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"maps"
 	"sync"
@@ -168,7 +169,7 @@ func (m *Mailer) SendTemplate(ctx context.Context, to []string, templateName str
 // SendEmail sends a custom email
 func (m *Mailer) SendEmail(ctx context.Context, email *Email) error {
 	if email == nil {
-		return fmt.Errorf("nil email")
+		return errors.New("nil email")
 	}
 	e := cloneEmail(email) // deep copy to avoid mutating the caller's email
 	if e.From == "" {

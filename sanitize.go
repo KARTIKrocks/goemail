@@ -726,7 +726,7 @@ func SanitizeFuncMap() htmltemplate.FuncMap {
 func SanitizeFuncMapWithPolicy(p *Policy) htmltemplate.FuncMap {
 	return htmltemplate.FuncMap{
 		"sanitize": func(html string) htmltemplate.HTML {
-			return htmltemplate.HTML(SanitizeHTMLWithPolicy(html, p))
+			return htmltemplate.HTML(SanitizeHTMLWithPolicy(html, p)) //nolint:gosec // output already passed through the sanitizer; wrapping avoids re-escaping it
 		},
 	}
 }

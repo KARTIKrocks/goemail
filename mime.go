@@ -9,6 +9,7 @@ import (
 	"mime/quotedprintable"
 	"net/mail"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -339,7 +340,7 @@ func sanitizeFilename(name string) string {
 
 // isASCII reports whether s contains only 7-bit ASCII characters.
 func isASCII(s string) bool {
-	for i := 0; i < len(s); i++ {
+	for i := range len(s) {
 		if s[i] > 127 {
 			return false
 		}
@@ -377,7 +378,7 @@ func generateUniqueID() string {
 	_, err := rand.Read(b)
 	if err != nil {
 		// Fallback: should never happen with crypto/rand
-		return fmt.Sprintf("%d", time.Now().UnixNano())
+		return strconv.FormatInt(time.Now().UnixNano(), 10)
 	}
 	return hex.EncodeToString(b)
 }

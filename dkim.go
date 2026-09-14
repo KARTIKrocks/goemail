@@ -11,6 +11,7 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -169,7 +170,7 @@ func ParseDKIMPrivateKey(pemData []byte) (crypto.Signer, error) {
 		return rsaKey, nil
 	}
 
-	return nil, fmt.Errorf("dkim: unable to parse private key (pkcs8: %v, pkcs1: %v)", err, rsaErr)
+	return nil, fmt.Errorf("dkim: unable to parse private key (pkcs8: %w, pkcs1: %w)", err, rsaErr)
 }
 
 // SignMessage signs a raw RFC 2822 message with a DKIM-Signature header.
@@ -431,10 +432,10 @@ func buildDKIMTagList(config *DKIMConfig, headers []string, bodyHashB64 string, 
 	tags.WriteString("c=" + string(headerCanon) + "/" + string(bodyCanon) + "; ")
 	tags.WriteString("d=" + config.Domain + "; ")
 	tags.WriteString("s=" + config.Selector + "; ")
-	tags.WriteString("t=" + fmt.Sprintf("%d", now.Unix()) + "; ")
+	tags.WriteString("t=" + strconv.FormatInt(now.Unix(), 10) + "; ")
 
 	if config.Expiration > 0 {
-		tags.WriteString("x=" + fmt.Sprintf("%d", now.Add(config.Expiration).Unix()) + "; ")
+		tags.WriteString("x=" + strconv.FormatInt(now.Add(config.Expiration).Unix(), 10) + "; ")
 	}
 
 	tags.WriteString("h=" + strings.Join(headers, ":") + "; ")

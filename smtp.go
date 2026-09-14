@@ -441,13 +441,13 @@ func (s *SMTPSender) sendDirect(ctx context.Context, addr string, auth smtp.Auth
 	// Bound the total time spent on subsequent SMTP commands so a slow or
 	// unresponsive server cannot hang Mail/Rcpt/Data/Quit indefinitely.
 	if deadlineErr := conn.SetDeadline(time.Now().Add(s.config.Timeout)); deadlineErr != nil {
-		conn.Close() //nolint:errcheck // best-effort cleanup
+		conn.Close() //nolint:errcheck,gosec // best-effort cleanup
 		return fmt.Errorf("set deadline: %w", deadlineErr)
 	}
 
 	client, err := smtp.NewClient(conn, s.config.Host)
 	if err != nil {
-		conn.Close() //nolint:errcheck // best-effort cleanup
+		conn.Close() //nolint:errcheck,gosec // best-effort cleanup
 		return fmt.Errorf("create client: %w", err)
 	}
 	// client.Close also closes the underlying conn, so a single defer

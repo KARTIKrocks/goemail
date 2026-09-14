@@ -12,6 +12,34 @@ linters:
     - gocyclo
     - revive
     - prealloc
+    # Security scanning matters for a library that signs DKIM headers,
+    # sanitizes untrusted HTML, and terminates SMTP/TLS connections.
+    - gosec
+    # Error-handling discipline: %w-wrapped errors must be compared with
+    # errors.Is/As, and sentinel errors must be named Err*.
+    - errorlint
+    - errname
+    - nilerr
+    - nilnesserr
+    # Concurrency and context correctness across the pool, middleware, and
+    # provider HTTP clients.
+    - contextcheck
+    - fatcontext
+    - noctx
+    - bodyclose
+    - durationcheck
+    # Correctness footguns.
+    - perfsprint
+    - makezero
+    - wastedassign
+    - unconvert
+    - asasalint
+    - reassign
+    - usestdlibvars
+    - copyloopvar
+    - intrange
+    # Keep //nolint directives specific and explained.
+    - nolintlint
   settings:
     gocyclo:
       min-complexity: 15
@@ -19,15 +47,34 @@ linters:
       rules:
         - name: exported
           disabled: true
+    errcheck:
+      # An unchecked type assertion panics; deliberate `_ =` discards still pass.
+      check-type-assertions: true
+    nolintlint:
+      require-explanation: true
+      require-specific: true
   exclusions:
     paths:
       - goemail-website/
     rules:
+      # Tests may ignore returned errors, assert on unwrapped errors, ignore
+      # response-body cleanup, use insecure TLS configs for local test
+      # servers, and build requests without a context; none of that ships
+      # to consumers.
       - linters:
           - errcheck
+          - bodyclose
+          - errorlint
+          - gosec
+          - intrange
+          - noctx
+          - perfsprint
         path: _test\.go
+      # Examples are illustrative, not part of the public API surface.
       - linters:
           - errcheck
+          - gosec
+          - perfsprint
         path: examples/
 
 formatters:

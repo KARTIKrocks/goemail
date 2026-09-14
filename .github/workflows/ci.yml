@@ -6,6 +6,15 @@ on:
   pull_request:
     branches: [ main ]
 
+permissions:
+  contents: read
+
+# Supersede an in-flight run when a PR is pushed to again. Runs on main are
+# never cancelled — coverage there is the recorded baseline.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   test:
     name: Test
@@ -46,6 +55,9 @@ jobs:
         files: ./coverage.txt
         fail_ci_if_error: false
 
+    - name: Check go.mod/go.sum are tidy
+      run: make tidy-check
+
   lint:
     name: Lint
     runs-on: ubuntu-latest
@@ -59,8 +71,53 @@ jobs:
       with:
         go-version: '1.27'
 
+    - name: Resolve golangci-lint version
+      id: golangci-lint
+      run: echo "version=$(make print-golangci-lint-version)" >> "$GITHUB_OUTPUT"
+
     - name: golangci-lint
       uses: golangci/golangci-lint-action@v9
       with:
-        version: v2.12.2
+        version: ${{ steps.golangci-lint.outputs.version }}
         args: --timeout=5m
+
+  vuln:
+    name: Vulnerability scan
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v7
+
+    - name: Set up Go
+      uses: actions/setup-go@v7
+      with:
+        go-version: '1.27'
+
+    - name: Run govulncheck
+      run: make vuln
+
+  # THIS IS THE ONLY JOB THAT SHOULD BE A REQUIRED STATUS CHECK.
+  #
+  # Requiring the other jobs directly is brittle: if the test matrix ever
+  # grows another entry, its check name changes and any branch protection
+  # rule pointing at the old name silently orphans. Gating on one stable name
+  # instead means the matrix is free to change.
+  #
+  # `if: always()` is load-bearing. Without it this job is skipped when a
+  # dependency fails, and GitHub counts a skipped required check as passing —
+  # a failing build would report mergeable.
+  ci:
+    name: ci
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    if: always()
+    needs: [ test, lint, vuln ]
+    steps:
+      - name: Fail if any dependency did not succeed
+        if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')
+        run: |
+          echo "::error::one or more CI jobs did not succeed"
+          exit 1
+      - name: All jobs succeeded
+        run: echo "all jobs succeeded"

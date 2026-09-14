@@ -124,7 +124,7 @@ func (p *smtpPool) dial(ctx context.Context) (*pooledConn, error) {
 
 	client, err := smtp.NewClient(conn, p.config.Host)
 	if err != nil {
-		conn.Close() //nolint:errcheck // best-effort cleanup
+		conn.Close() //nolint:errcheck,gosec // best-effort cleanup
 		return nil, fmt.Errorf("create client: %w", err)
 	}
 
@@ -134,8 +134,8 @@ func (p *smtpPool) dial(ctx context.Context) (*pooledConn, error) {
 			MinVersion: tls.VersionTLS12,
 		}
 		if tlsErr := client.StartTLS(tlsConfig); tlsErr != nil {
-			client.Close() //nolint:errcheck // best-effort cleanup
-			conn.Close()   //nolint:errcheck // best-effort cleanup
+			client.Close() //nolint:errcheck,gosec // best-effort cleanup
+			conn.Close()   //nolint:errcheck,gosec // best-effort cleanup
 			return nil, fmt.Errorf("start tls: %w", tlsErr)
 		}
 	}
@@ -143,8 +143,8 @@ func (p *smtpPool) dial(ctx context.Context) (*pooledConn, error) {
 	if p.config.Username != "" && p.config.Password != "" {
 		auth := smtp.PlainAuth("", p.config.Username, p.config.Password, p.config.Host)
 		if authErr := client.Auth(auth); authErr != nil {
-			client.Close() //nolint:errcheck // best-effort cleanup
-			conn.Close()   //nolint:errcheck // best-effort cleanup
+			client.Close() //nolint:errcheck,gosec // best-effort cleanup
+			conn.Close()   //nolint:errcheck,gosec // best-effort cleanup
 			return nil, fmt.Errorf("auth: %w", authErr)
 		}
 	}

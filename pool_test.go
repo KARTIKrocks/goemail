@@ -70,7 +70,7 @@ func (s *fakeSMTPServer) serve(t *testing.T) {
 
 func (s *fakeSMTPServer) handleConn(t *testing.T, conn net.Conn) {
 	t.Helper()
-	defer conn.Close() //nolint:errcheck
+	defer conn.Close()
 
 	reader := bufio.NewReader(conn)
 	write := func(msg string) {
@@ -191,7 +191,7 @@ func (s *fakeSMTPServer) handleReset(write func(string)) connAction {
 
 func (s *fakeSMTPServer) close() {
 	s.closed.Store(true)
-	s.listener.Close() //nolint:errcheck
+	s.listener.Close()
 }
 
 func (s *fakeSMTPServer) port() int {
@@ -254,7 +254,7 @@ func TestPoolConnectionReuse(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewSMTPSender: %v", err)
 	}
-	defer sender.Close() //nolint:errcheck
+	defer sender.Close()
 
 	ctx := context.Background()
 
@@ -637,7 +637,7 @@ func TestPoolConcurrentBatch(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewSMTPSender: %v", err)
 	}
-	defer sender.Close() //nolint:errcheck
+	defer sender.Close()
 
 	ctx := context.Background()
 	var wg sync.WaitGroup
@@ -723,7 +723,7 @@ func TestPoolNoPoolBackwardCompat(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewSMTPSender: %v", err)
 	}
-	defer sender.Close() //nolint:errcheck
+	defer sender.Close()
 
 	if sender.pool != nil {
 		t.Error("expected pool to be nil when PoolSize=0")

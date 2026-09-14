@@ -1,0 +1,58 @@
+name: CodeQL
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    - cron: "0 6 * * 1"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  # Scanned per module for the same reason `lint` in ci.yml is: the root
+  # module's ./... stops at nested go.mod boundaries, so a single build from
+  # the root extracts no code at all from the provider modules.
+  #
+  # `category` must differ per module. CodeQL keys uploaded results by it, so
+  # without it each module's results would overwrite the previous module's and
+  # the security tab would only ever show whichever job finished last.
+  analyze:
+    name: Analyze (${{ matrix.module }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      security-events: write
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        module: [ ".", "providers/mailgun", "providers/otelmail", "providers/sendgrid", "providers/ses" ]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Set up Go
+        uses: actions/setup-go@v7
+        with:
+          go-version: '1.27'
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v4.37.9
+        with:
+          languages: go
+
+      - name: Build
+        working-directory: ${{ matrix.module }}
+        run: go build ./...
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v4.37.9
+        with:
+          category: "/language:go/module:${{ matrix.module }}"
