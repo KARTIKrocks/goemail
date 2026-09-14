@@ -228,6 +228,8 @@ examples:
 	go build -o bin/template examples/template/main.go
 	go build -o bin/attachment examples/attachment/main.go
 	go build -o bin/batch examples/batch/main.go
+	go build -o bin/middleware examples/middleware/main.go
+	go build -o bin/pool examples/pool/main.go
 	@echo "Examples built in bin/"
 
 ## Remove build and coverage artifacts
