@@ -74,6 +74,20 @@ const FEATURES = [
   },
 ] as const satisfies readonly Feature[];
 
+// Everything goemail provides that raw net/smtp leaves to you. Kept in sync
+// with the "Why goemail?" table in the repository README.
+const CAPABILITIES = [
+  'Retry with exponential backoff',
+  'Connection pooling for high throughput',
+  'Rate limiting',
+  'DKIM signing (RSA-SHA256 / Ed25519-SHA256)',
+  'HTML templates, attachments, batch sending',
+  'Provider HTTP adapters (SendGrid, Mailgun, AWS SES)',
+  'Middleware (logging, metrics, hooks, recovery)',
+  'Header injection protection, address validation',
+  'Async sending with a buffered worker queue',
+] as const satisfies readonly string[];
+
 const INSTALL_COMMAND = 'go get github.com/KARTIKrocks/goemail';
 
 function Hero(): ReactNode {
@@ -126,6 +140,51 @@ function Features(): ReactNode {
   );
 }
 
+function WhyGoemail(): ReactNode {
+  return (
+    <section className={styles.section}>
+      <div className="container">
+        <h2 className={styles.sectionTitle}>Why goemail?</h2>
+        <p className={styles.sectionLead}>
+          <code>net/smtp</code> gets you a connection and a <code>DATA</code>{' '}
+          command. Everything past that — the parts that turn “I can send one
+          email” into “I can run this in production” — is what goemail provides.
+          It is not a replacement for <code>net/smtp</code>; the default{' '}
+          <code>Sender</code> is built on top of it.
+        </p>
+
+        <div className={styles.tableScroll}>
+          <table className={styles.compare}>
+            <thead>
+              <tr>
+                <th scope="col">Capability</th>
+                <th scope="col">goemail</th>
+                <th scope="col">
+                  Raw <code>net/smtp</code>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {CAPABILITIES.map((capability) => (
+                <tr key={capability}>
+                  <th scope="row">{capability}</th>
+                  <td>
+                    <span className={styles.check} aria-hidden="true">
+                      ✓
+                    </span>
+                    <span className={styles.srOnly}>Included</span>
+                  </td>
+                  <td className={styles.diy}>You build it</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 export default function Home(): ReactNode {
   const { siteConfig } = useDocusaurusContext();
 
@@ -136,6 +195,7 @@ export default function Home(): ReactNode {
       <Hero />
       <main>
         <Features />
+        <WhyGoemail />
       </main>
     </Layout>
   );
