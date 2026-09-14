@@ -5,7 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.3.0] - 2026-09-14
+
+### Added
+
+- Documentation site at https://kartikrocks.github.io/goemail/, built with
+  Docusaurus and published from `website/`.
+- `SECURITY.md` describing the vulnerability reporting process.
+- `govulncheck` and CodeQL scanning in CI, with expanded `golangci-lint`
+  coverage.
+
+### Changed
+
+- Adopt modern standard library idioms enabled by Go 1.27 (`strings.Cut`,
+  `maps.Copy`, `slices.Backward`/`Contains`, `min`/`max`, `errors.AsType`,
+  `sync.WaitGroup.Go`, range-over-int).
+
+### Requirements
+
+- Go 1.27 or newer (up from 1.26).
 
 ## [0.2.0] - 2026-06-06
 
@@ -221,6 +239,7 @@ Initial public release.
 
 - Go 1.26 or newer.
 
-[Unreleased]: https://github.com/KARTIKrocks/goemail/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/KARTIKrocks/goemail/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/KARTIKrocks/goemail/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/KARTIKrocks/goemail/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/KARTIKrocks/goemail/releases/tag/v0.1.0
