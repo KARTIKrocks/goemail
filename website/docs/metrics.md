@@ -1,33 +1,40 @@
-import CodeBlock from '../components/CodeBlock';
+---
+id: metrics
+title: Metrics
+description: Record send attempts, successes, failures, and latency with a small, library-agnostic MetricsCollector interface.
+---
 
-export default function MetricsDocs() {
-  return (
-    <section id="metrics" className="py-10 border-b border-border">
-      <h2 className="text-2xl font-bold text-text-heading mb-4">Metrics</h2>
-      <p className="text-text-muted mb-4">
-        Wrap any <code>Sender</code> with <code>WithMetrics</code> to record send attempts, successes,
-        failures, and per-send latency. The interface is small and library-agnostic — implement it
-        with Prometheus, OpenTelemetry, statsd, or whatever your stack uses.
-      </p>
+# Metrics
 
-      <h3 id="metrics-interface" className="text-lg font-semibold text-text-heading mt-8 mb-2">MetricsCollector</h3>
-      <CodeBlock code={`type MetricsCollector interface {
+Wrap any `Sender` with `WithMetrics` to record send attempts, successes,
+failures, and per-send latency. The interface is small and
+library-agnostic — implement it with Prometheus, OpenTelemetry, statsd,
+or whatever your stack uses.
+
+## MetricsCollector
+
+```go
+type MetricsCollector interface {
     IncSendAttempt()
     IncSendSuccess()
     IncSendFailure()
     ObserveSendDuration(d time.Duration)
-}`} />
+}
+```
 
-      <p className="text-text-muted mb-3">
-        For testing or "metrics off in this environment" scenarios, use the no-op collector:
-      </p>
-      <CodeBlock code={`wrapped := email.Chain(sender, email.WithMetrics(email.NoOpMetricsCollector{}))`} />
+For testing or "metrics off in this environment" scenarios, use the
+no-op collector:
 
-      <h3 id="metrics-prometheus" className="text-lg font-semibold text-text-heading mt-8 mb-2">Prometheus Example</h3>
-      <p className="text-text-muted mb-3">
-        A typical Prometheus implementation — three counters and a histogram:
-      </p>
-      <CodeBlock code={`import (
+```go
+wrapped := email.Chain(sender, email.WithMetrics(email.NoOpMetricsCollector{}))
+```
+
+## Prometheus Example
+
+A typical Prometheus implementation — three counters and a histogram:
+
+```go
+import (
     "time"
 
     email "github.com/KARTIKrocks/goemail"
@@ -66,7 +73,5 @@ func (m *promMetrics) IncSendFailure()                          { m.failure.Inc(
 func (m *promMetrics) ObserveSendDuration(d time.Duration)      { m.duration.Observe(d.Seconds()) }
 
 // Wire it up
-wrapped := email.Chain(sender, email.WithMetrics(newPromMetrics()))`} />
-    </section>
-  );
-}
+wrapped := email.Chain(sender, email.WithMetrics(newPromMetrics()))
+```
