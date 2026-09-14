@@ -1393,7 +1393,7 @@ func TestMockSenderGetEmailsBySubject(t *testing.T) {
 	mock := NewMockSender()
 	ctx := context.Background()
 
-	for i := 0; i < 3; i++ {
+	for i := range 3 {
 		subject := "Test"
 		if i == 1 {
 			subject = "Other"

@@ -644,9 +644,7 @@ func TestPoolConcurrentBatch(t *testing.T) {
 	errCh := make(chan error, numEmails)
 
 	for i := range numEmails {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			e := &Email{
 				From:    "sender@example.com",
 				To:      []string{"recipient@example.com"},
@@ -657,7 +655,7 @@ func TestPoolConcurrentBatch(t *testing.T) {
 			if sendErr := sender.Send(ctx, e); sendErr != nil {
 				errCh <- sendErr
 			}
-		}()
+		})
 	}
 	wg.Wait()
 	close(errCh)

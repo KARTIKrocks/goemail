@@ -1,6 +1,6 @@
 module github.com/KARTIKrocks/goemail
 
-go 1.26
+go 1.27
 
 require (
 	golang.org/x/sync v0.22.0

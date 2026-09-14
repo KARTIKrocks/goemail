@@ -266,10 +266,7 @@ func buildRawMessage(e *Email) ([]byte, error) {
 func wrapText(text string, width int) string {
 	var result strings.Builder
 	for i := 0; i < len(text); i += width {
-		end := i + width
-		if end > len(text) {
-			end = len(text)
-		}
+		end := min(i+width, len(text))
 		result.WriteString(text[i:end])
 		if end < len(text) {
 			result.WriteString("\r\n")

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 	"time"
 )
 
@@ -18,8 +19,8 @@ type Middleware func(Sender) Sender
 //
 // A call to wrapped.Send() executes: logging -> recovery -> metrics -> sender.
 func Chain(sender Sender, middlewares ...Middleware) Sender {
-	for i := len(middlewares) - 1; i >= 0; i-- {
-		sender = middlewares[i](sender)
+	for _, middleware := range slices.Backward(middlewares) {
+		sender = middleware(sender)
 	}
 	return sender
 }

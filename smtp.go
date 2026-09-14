@@ -276,8 +276,7 @@ func (s *SMTPSender) sendWithRetries(ctx context.Context, email *Email) error {
 			// Ensure callers always see a *Error from Send, regardless of
 			// whether the underlying failure came from validation, message
 			// building, or a context-cancelled I/O call.
-			var emailErr *Error
-			if errors.As(lastErr, &emailErr) {
+			if _, ok := errors.AsType[*Error](lastErr); ok {
 				return lastErr
 			}
 			return &Error{Op: "send", From: email.From, To: email.To, Err: lastErr}
