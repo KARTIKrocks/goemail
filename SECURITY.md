@@ -15,9 +15,10 @@ Useful things to include, if you have them: the affected version, whether the
 issue is reachable from untrusted input (e.g. a recipient address or header
 value a user supplied), and a minimal `Email`/`SMTPConfig` that reproduces it.
 
-You can expect an acknowledgement within 7 days. If a report is confirmed, the
-advisory is published together with the release that fixes it, and you will be
-credited unless you ask otherwise.
+This is a solo-maintained project, so there's no fixed response-time SLA —
+you can expect a best-effort acknowledgement, typically within a couple of
+weeks. If a report is confirmed, the advisory is published together with the
+release that fixes it, and you will be credited unless you ask otherwise.
 
 ## Supported versions
 
