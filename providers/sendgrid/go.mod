@@ -1,6 +1,6 @@
 module github.com/KARTIKrocks/goemail/providers/sendgrid
 
-go 1.26
+go 1.27
 
 require github.com/KARTIKrocks/goemail v0.2.0
 

@@ -440,10 +440,7 @@ func (p *smtpPool) removeWaiter(ch chan *pooledConn) {
 
 // cleaner runs periodically to evict idle connections.
 func (p *smtpPool) cleaner() {
-	interval := p.maxIdleTime / 2
-	if interval < 100*time.Millisecond {
-		interval = 100 * time.Millisecond
-	}
+	interval := max(p.maxIdleTime/2, 100*time.Millisecond)
 	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
 

@@ -2,6 +2,7 @@ package email
 
 import (
 	"context"
+	"slices"
 	"sync"
 )
 
@@ -96,11 +97,8 @@ func (m *MockSender) GetEmailsTo(recipient string) []*Email {
 
 	var result []*Email
 	for _, email := range m.emails {
-		for _, to := range email.To {
-			if to == recipient {
-				result = append(result, email)
-				break
-			}
+		if slices.Contains(email.To, recipient) {
+			result = append(result, email)
 		}
 	}
 	return result

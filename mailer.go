@@ -3,6 +3,7 @@ package email
 import (
 	"context"
 	"fmt"
+	"maps"
 	"sync"
 
 	"golang.org/x/sync/errgroup"
@@ -55,9 +56,7 @@ func cloneEmail(src *Email) *Email {
 	}
 	if len(src.Headers) > 0 {
 		dst.Headers = make(map[string]string, len(src.Headers))
-		for k, v := range src.Headers {
-			dst.Headers[k] = v
-		}
+		maps.Copy(dst.Headers, src.Headers)
 	}
 	return dst
 }

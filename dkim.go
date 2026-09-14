@@ -302,9 +302,9 @@ func parseHeaders(headerSection string) *parsedHeaders {
 		} else {
 			// New header
 			currentHeader = line
-			colonIdx := strings.Index(line, ":")
-			if colonIdx >= 0 {
-				currentName = strings.ToLower(strings.TrimSpace(line[:colonIdx]))
+			before, _, ok := strings.Cut(line, ":")
+			if ok {
+				currentName = strings.ToLower(strings.TrimSpace(before))
 				result.byName[currentName] = append(result.byName[currentName], line)
 			}
 		}
