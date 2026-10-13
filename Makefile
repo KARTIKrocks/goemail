@@ -1,6 +1,4 @@
-GOLANGCI_LINT_VERSION := v2.13.2
-GOIMPORTS_VERSION := v0.50.0
-GOVULNCHECK_VERSION := v1.8.0
+include common.mk
 
 MODULES = . ./providers/mailgun ./providers/otelmail ./providers/sendgrid ./providers/ses
 SUB_MODULES = ./providers/mailgun ./providers/otelmail ./providers/sendgrid ./providers/ses
@@ -9,7 +7,7 @@ SUB_MODULES = ./providers/mailgun ./providers/otelmail ./providers/sendgrid ./pr
 # here, so Dependabot keeps it current along with the rest of the docs toolchain.
 MARKDOWNLINT := website/node_modules/.bin/markdownlint-cli2
 
-.PHONY: all help setup setup-golangci-lint setup-goimports setup-govulncheck deps ci test test-v test-race coverage lint lint-fix lint-docs lint-docs-fix fix fmt fmt-check vet tidy tidy-check vuln print-golangci-lint-version build bench examples clean
+.PHONY: all help setup deps ci test test-v test-race coverage lint lint-fix lint-docs lint-docs-fix fix fmt fmt-check vet tidy tidy-check vuln build bench examples clean
 
 all: tidy fmt vet lint build test
 
@@ -39,30 +37,6 @@ help:
 	@echo "  bench         - Run benchmarks (all modules)"
 	@echo "  examples      - Build all examples"
 	@echo "  clean         - Remove build/coverage artifacts"
-
-## Install all development tools (skips each if already present)
-setup: setup-golangci-lint setup-goimports setup-govulncheck
-
-## Install golangci-lint, skipping if already present
-setup-golangci-lint:
-	@command -v golangci-lint >/dev/null 2>&1 || { \
-		echo "Installing golangci-lint $(GOLANGCI_LINT_VERSION)..."; \
-		go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION); \
-	}
-
-## Install goimports, skipping if already present
-setup-goimports:
-	@command -v goimports >/dev/null 2>&1 || { \
-		echo "Installing goimports $(GOIMPORTS_VERSION)..."; \
-		go install golang.org/x/tools/cmd/goimports@$(GOIMPORTS_VERSION); \
-	}
-
-## Install govulncheck, skipping if already present
-setup-govulncheck:
-	@command -v govulncheck >/dev/null 2>&1 || { \
-		echo "Installing govulncheck $(GOVULNCHECK_VERSION)..."; \
-		go install golang.org/x/vuln/cmd/govulncheck@$(GOVULNCHECK_VERSION); \
-	}
 
 ## Download module dependencies across all modules
 deps:
@@ -119,14 +93,14 @@ coverage:
 	@echo "Full report: go tool cover -html=coverage.out"
 
 ## Run linter across all modules
-lint: setup-golangci-lint
+lint: setup
 	@for mod in $(MODULES); do \
 		echo "==> Linting $$mod"; \
 		(cd $$mod && golangci-lint run --timeout=5m ./...) || exit 1; \
 	done
 
 ## Run golangci-lint with auto-fix (root module)
-lint-fix: setup-golangci-lint
+lint-fix: setup
 	golangci-lint run --fix ./...
 
 ## Lint every Markdown file in the repo — the docs site, the README, and the
@@ -148,12 +122,12 @@ $(MARKDOWNLINT):
 fix: fmt lint-fix
 
 ## Format code
-fmt: setup-goimports
+fmt: setup
 	@gofmt -s -w .
 	@goimports -w .
 
 ## Check formatting without modifying files (used in CI)
-fmt-check: setup-goimports
+fmt-check: setup
 	@test -z "$$(gofmt -s -l . | tee /dev/stderr)" || { echo "Unformatted files found. Run 'make fmt'."; exit 1; }
 	@test -z "$$(goimports -l . | tee /dev/stderr)" || { echo "Unordered imports found. Run 'make fmt'."; exit 1; }
 
@@ -201,17 +175,11 @@ tidy-check:
 ## installed, so it can fail locally on a green branch when your Go is a patch
 ## release behind the one CI pins. That is a real finding about your machine,
 ## not a false positive.
-vuln: setup-govulncheck
+vuln: setup
 	@for mod in $(MODULES); do \
 		echo "==> Scanning $$mod"; \
 		(cd $$mod && govulncheck ./...) || exit 1; \
 	done
-
-## Print the pinned linter version. CI resolves golangci-lint-action's version
-## input from this rather than hardcoding a second copy of the number, so the
-## workflow and this file cannot drift apart.
-print-golangci-lint-version:
-	@echo $(GOLANGCI_LINT_VERSION)
 
 ## Run benchmarks across all modules
 bench:
