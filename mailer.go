@@ -230,11 +230,11 @@ func (m *Mailer) SendBatch(ctx context.Context, emails []*Email, concurrencyLimi
 	g := worker.NewGroupContext(ctx, pool)
 	for _, email := range prepared {
 		g.Go(func(ctx context.Context) error {
-			return m.sender.Send(ctx, email)
+			return wrapSend(m.sender.Send(ctx, email))
 		})
 	}
 
-	return panicErr(g.Wait())
+	return poolErr(g.Wait())
 }
 
 // Close closes the mailer

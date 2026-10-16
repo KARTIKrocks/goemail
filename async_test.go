@@ -3,24 +3,32 @@ package email
 import (
 	"context"
 	"errors"
+	"slices"
 	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
+
+	"github.com/KARTIKrocks/go-worker"
 )
 
 // slowSender blocks on Send until its channel is closed or a value is sent.
 type slowSender struct {
-	gate chan struct{}
-	mu   sync.Mutex
-	sent []*Email
+	gate    chan struct{}
+	started chan struct{} // receives once per Send that has begun blocking
+	mu      sync.Mutex
+	sent    []*Email
 }
 
 func newSlowSender() *slowSender {
-	return &slowSender{gate: make(chan struct{})}
+	return &slowSender{gate: make(chan struct{}), started: make(chan struct{}, 100)}
 }
 
 func (s *slowSender) Send(_ context.Context, e *Email) error {
+	select {
+	case s.started <- struct{}{}:
+	default:
+	}
 	<-s.gate // block until released
 	s.mu.Lock()
 	s.sent = append(s.sent, e)
@@ -148,11 +156,13 @@ func TestAsyncSender_Close_UnblocksSendWait(t *testing.T) {
 	slow := newSlowSender()
 	a := NewAsyncSender(slow, WithQueueSize(1))
 
-	// Occupy the worker and fill the queue.
-	for range 100 {
-		if errors.Is(a.Send(context.Background(), testEmail()), ErrQueueFull) {
-			break
-		}
+	// Occupy the worker, then fill the one queue slot.
+	if err := a.Send(context.Background(), testEmail()); err != nil {
+		t.Fatalf("first send: %v", err)
+	}
+	<-slow.started
+	if err := a.Send(context.Background(), testEmail()); err != nil {
+		t.Fatalf("second send: %v", err)
 	}
 
 	waitErr := make(chan error, 1)
@@ -291,6 +301,49 @@ func TestAsyncSender_SendWait_Panic(t *testing.T) {
 
 	if err := a.SendWait(context.Background(), testEmail()); !errors.Is(err, ErrPanicked) {
 		t.Fatalf("expected ErrPanicked, got %v", err)
+	}
+}
+
+// poolErrSender returns the given error, standing in for a Sender built on
+// its own go-worker pool.
+type poolErrSender struct{ err error }
+
+func (s poolErrSender) Send(context.Context, *Email) error { return s.err }
+func (poolErrSender) Close() error                         { return nil }
+
+func TestAsyncSender_SendWait_SenderPoolErrorsPassThrough(t *testing.T) {
+	for _, want := range []error{worker.ErrPoolClosed, worker.ErrPoolFull, &worker.PanicError{Value: "inner"}} {
+		a := NewAsyncSender(poolErrSender{want})
+		err := a.SendWait(context.Background(), testEmail())
+		a.Close()
+		if err != want {
+			t.Errorf("expected %v unchanged, got %v", want, err)
+		}
+	}
+}
+
+func TestAsyncSender_ErrorHandlerPanicIsLogged(t *testing.T) {
+	logger := &recordingLogger{}
+	a := NewAsyncSender(&failSender{err: errors.New("boom")},
+		WithAsyncLogger(logger),
+		WithErrorHandler(func(context.Context, *Email, error) { panic("handler bug") }),
+	)
+	if err := a.Send(context.Background(), testEmail()); err != nil {
+		t.Fatalf("send: %v", err)
+	}
+	a.Close()
+
+	logger.mu.Lock()
+	defer logger.mu.Unlock()
+	msgs := make([]string, 0, len(logger.entries))
+	for _, e := range logger.entries {
+		msgs = append(msgs, e.msg)
+	}
+	if !slices.Contains(msgs, "hook panicked") {
+		t.Fatalf("expected the handler panic to be logged, got %v", msgs)
+	}
+	if slices.Contains(msgs, "pool started") || slices.Contains(msgs, "pool stopped") {
+		t.Fatalf("pool lifecycle messages leaked into the logger: %v", msgs)
 	}
 }
 

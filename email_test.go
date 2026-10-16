@@ -11,6 +11,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/KARTIKrocks/go-worker"
 )
 
 func TestEmailBuilder(t *testing.T) {
@@ -330,6 +332,19 @@ func TestBatchSendingPanicReturnsError(t *testing.T) {
 
 	if err := mailer.SendBatch(context.Background(), emails, 2); !errors.Is(err, ErrPanicked) {
 		t.Fatalf("expected ErrPanicked, got %v", err)
+	}
+}
+
+func TestBatchSendingSenderPanicErrorPassesThrough(t *testing.T) {
+	want := &worker.PanicError{Value: "inner pool"}
+	mailer := NewMailer(poolErrSender{want}, "test@example.com")
+
+	emails := []*Email{
+		NewEmail().AddTo("user1@example.com").SetSubject("Test 1").SetBody("Body 1"),
+	}
+	err := mailer.SendBatch(context.Background(), emails, 2)
+	if err != want || errors.Is(err, ErrPanicked) {
+		t.Fatalf("expected %v unchanged, got %v", want, err)
 	}
 }
 

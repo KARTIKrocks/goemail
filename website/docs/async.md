@@ -68,15 +68,20 @@ if err := async.SendWait(ctx, msg); err != nil {
 
 ## Panics
 
-A panic in the wrapped `Sender` does not crash the process. The send fails
-with an error wrapping `ErrPanicked`: `SendWait` returns it, and for `Send`
-it goes to the error handler. Match it with `errors.Is(err, email.ErrPanicked)`.
+_Added in 0.4._ A panic in the wrapped `Sender` does not crash the process.
+The send fails with an error wrapping `ErrPanicked`: `SendWait` returns it,
+and for `Send` it goes to the error handler. Match it with
+`errors.Is(err, email.ErrPanicked)`.
 
 ## Close
 
 `Close` drains the queue, waits for in-flight workers to finish, then
 closes the underlying sender. Always defer it during shutdown so queued
 emails are not lost.
+
+_Changed in 0.4._ A `SendWait` still waiting for queue space returns
+`ErrQueueClosed` as soon as `Close` is called; before, `Close` blocked until
+that email got a slot.
 
 ```go
 async := email.NewAsyncSender(sender, email.WithWorkers(3))

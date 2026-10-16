@@ -92,6 +92,7 @@ func NewAsyncSender(sender Sender, opts ...AsyncOption) *AsyncSender {
 	pool, err := worker.NewPool(
 		worker.WithWorkers(a.workers),
 		worker.WithQueueSize(a.queueSize),
+		worker.WithLogger(poolLogger{a.logger}),
 		worker.WithHooks(worker.Hooks{OnJobFailed: a.jobFailed}),
 	)
 	if err != nil {
@@ -120,7 +121,7 @@ func (a *AsyncSender) Send(ctx context.Context, e *Email) error {
 		return err
 	}
 
-	return queueErr(a.pool.TrySubmitJob(&asyncJob{
+	return poolErr(a.pool.TrySubmitJob(&asyncJob{
 		sender: a.sender,
 		ctx:    context.WithoutCancel(ctx),
 		email:  e,
@@ -138,9 +139,9 @@ func (a *AsyncSender) SendWait(ctx context.Context, e *Email) error {
 		return err
 	}
 
-	return queueErr(panicErr(a.pool.SubmitWait(ctx, func(ctx context.Context) error {
-		return a.sender.Send(ctx, e)
-	})))
+	return poolErr(a.pool.SubmitWait(ctx, func(ctx context.Context) error {
+		return wrapSend(a.sender.Send(ctx, e))
+	}))
 }
 
 // Close stops accepting new emails, waits for in-flight work to complete,
@@ -162,7 +163,7 @@ type asyncJob struct {
 }
 
 func (j *asyncJob) Process(context.Context) error {
-	return j.sender.Send(j.ctx, j.email) //nolint:contextcheck // the caller's detached context, as documented on Send
+	return wrapSend(j.sender.Send(j.ctx, j.email)) //nolint:contextcheck // the caller's detached context, as documented on Send
 }
 
 func (a *AsyncSender) jobFailed(job worker.Job, err error, _ time.Duration) {
@@ -170,7 +171,7 @@ func (a *AsyncSender) jobFailed(job worker.Job, err error, _ time.Duration) {
 	if !ok {
 		return
 	}
-	err = panicErr(err)
+	err = poolErr(err)
 	a.logger.Error("async email send failed",
 		"error", err,
 		"to", j.email.To,
@@ -181,24 +182,43 @@ func (a *AsyncSender) jobFailed(job worker.Job, err error, _ time.Duration) {
 	}
 }
 
-// queueErr maps the pool's sentinel errors to the AsyncSender ones. The pool
-// returns them unwrapped, so comparing with == leaves a Sender's own error
-// alone even when it wraps one of them.
-func queueErr(err error) error {
-	if err == worker.ErrPoolFull { //nolint:errorlint // see above
-		return ErrQueueFull
+// sendError marks an error returned by the wrapped Sender, so poolErr never
+// mistakes it for one raised by the pool itself, even when the Sender runs a
+// go-worker pool of its own.
+type sendError struct{ err error }
+
+func (e *sendError) Error() string { return e.err.Error() }
+
+func wrapSend(err error) error {
+	if err == nil {
+		return nil
 	}
-	if err == worker.ErrPoolClosed { //nolint:errorlint // see above
+	return &sendError{err}
+}
+
+// poolErr turns a pool result back into what callers expect: the Sender's own
+// error untouched, a recovered panic wrapped in ErrPanicked (the error the
+// recovery middleware also returns), and the pool's sentinels mapped to the
+// AsyncSender ones.
+func poolErr(err error) error {
+	if se, ok := errors.AsType[*sendError](err); ok {
+		return se.err
+	}
+	var pe *worker.PanicError
+	switch {
+	case errors.As(err, &pe):
+		return fmt.Errorf("%w: %w", ErrPanicked, err)
+	case errors.Is(err, worker.ErrPoolFull):
+		return ErrQueueFull
+	case errors.Is(err, worker.ErrPoolClosed):
 		return ErrQueueClosed
 	}
 	return err
 }
 
-// panicErr wraps a panic recovered by the pool in ErrPanicked, the error the
-// recovery middleware also returns.
-func panicErr(err error) error {
-	if errors.Is(err, worker.ErrJobPanic) {
-		return fmt.Errorf("%w: %w", ErrPanicked, err)
-	}
-	return err
-}
+// poolLogger forwards the pool's warnings and errors, such as a recovered
+// panic's stack trace, and drops its lifecycle messages.
+type poolLogger struct{ Logger }
+
+func (poolLogger) Debug(string, ...any) {}
+func (poolLogger) Info(string, ...any)  {}

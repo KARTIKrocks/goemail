@@ -80,8 +80,10 @@ err := mailer.SendTemplate(ctx,
 
 `SendBatch` sends many emails concurrently with a bounded worker pool.
 Every email is attempted, and the first failure is returned — one failure
-does not cancel the other sends. A panicking sender fails its email with an
-error wrapping `ErrPanicked`.
+does not cancel the other sends.
+
+_Added in 0.4._ A panicking sender fails its email with an error wrapping
+`ErrPanicked`.
 
 ```go
 emails := []*email.Email{

@@ -11,7 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - A panicking `Sender` no longer crashes the process from `AsyncSender` or
   `Mailer.SendBatch`. The send fails with an error wrapping `ErrPanicked`; for
-  fire-and-forget `Send` it reaches the error handler.
+  fire-and-forget `Send` it reaches the error handler. The panic's stack trace
+  goes to the `AsyncSender` logger, as does a panic in the error handler.
 - `AsyncSender.Close` no longer blocks behind a `SendWait` that is waiting for
   queue space; that `SendWait` now returns `ErrQueueClosed`.
 
