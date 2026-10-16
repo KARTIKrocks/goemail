@@ -347,6 +347,25 @@ func TestAsyncSender_ErrorHandlerPanicIsLogged(t *testing.T) {
 	}
 }
 
+func TestAsyncSender_Send_CallerMutationAfterSend(t *testing.T) {
+	slow := newSlowSender()
+	a := NewAsyncSender(slow)
+
+	e := testEmail()
+	want := e.Subject
+	if err := a.Send(context.Background(), e); err != nil {
+		t.Fatalf("send: %v", err)
+	}
+	e.SetSubject("changed after Send")
+
+	slow.release()
+	a.Close()
+
+	if got := slow.sent[0].Subject; got != want {
+		t.Fatalf("delivered subject %q, want %q", got, want)
+	}
+}
+
 func TestAsyncSender_MultipleWorkers(t *testing.T) {
 	cs := &countSender{}
 	a := NewAsyncSender(cs, WithWorkers(3), WithQueueSize(200))

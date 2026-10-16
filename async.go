@@ -124,7 +124,7 @@ func (a *AsyncSender) Send(ctx context.Context, e *Email) error {
 	return poolErr(a.pool.TrySubmitJob(&asyncJob{
 		sender: a.sender,
 		ctx:    context.WithoutCancel(ctx),
-		email:  e,
+		email:  cloneEmail(e), // the caller may reuse e once Send returns
 	}))
 }
 
@@ -139,6 +139,7 @@ func (a *AsyncSender) SendWait(ctx context.Context, e *Email) error {
 		return err
 	}
 
+	e = cloneEmail(e) // the job can outlive a cancelled ctx
 	return poolErr(a.pool.SubmitWait(ctx, func(ctx context.Context) error {
 		return wrapSend(a.sender.Send(ctx, e))
 	}))
