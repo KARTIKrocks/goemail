@@ -79,8 +79,9 @@ err := mailer.SendTemplate(ctx,
 ## Batch Sending
 
 `SendBatch` sends many emails concurrently with a bounded worker pool.
-Failures are aggregated and returned as a single joined error — successful
-sends still go through.
+Every email is attempted, and the first failure is returned — one failure
+does not cancel the other sends. A panicking sender fails its email with an
+error wrapping `ErrPanicked`.
 
 ```go
 emails := []*email.Email{

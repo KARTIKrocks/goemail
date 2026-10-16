@@ -144,6 +144,39 @@ func TestAsyncSender_Send_QueueFull(t *testing.T) {
 	t.Fatal("expected ErrQueueFull but never received it")
 }
 
+func TestAsyncSender_Close_UnblocksSendWait(t *testing.T) {
+	slow := newSlowSender()
+	a := NewAsyncSender(slow, WithQueueSize(1))
+
+	// Occupy the worker and fill the queue.
+	for range 100 {
+		if errors.Is(a.Send(context.Background(), testEmail()), ErrQueueFull) {
+			break
+		}
+	}
+
+	waitErr := make(chan error, 1)
+	go func() { waitErr <- a.SendWait(context.Background(), testEmail()) }()
+
+	closed := make(chan struct{})
+	go func() {
+		a.Close()
+		close(closed)
+	}()
+
+	select {
+	case err := <-waitErr:
+		if !errors.Is(err, ErrQueueClosed) {
+			t.Fatalf("expected ErrQueueClosed, got %v", err)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("SendWait still blocked after Close")
+	}
+
+	slow.release()
+	<-closed
+}
+
 func TestAsyncSender_Send_AfterClose(t *testing.T) {
 	mock := NewMockSender()
 	a := NewAsyncSender(mock)
@@ -228,6 +261,36 @@ func TestAsyncSender_ErrorHandler(t *testing.T) {
 	}
 	if gotEmail == nil {
 		t.Fatal("expected email in error handler")
+	}
+}
+
+func TestAsyncSender_Send_PanicReachesErrorHandler(t *testing.T) {
+	errCh := make(chan error, 1)
+	a := NewAsyncSender(&panicSender{}, WithErrorHandler(func(_ context.Context, _ *Email, err error) {
+		errCh <- err
+	}))
+	defer a.Close()
+
+	if err := a.Send(context.Background(), testEmail()); err != nil {
+		t.Fatalf("send: %v", err)
+	}
+
+	select {
+	case err := <-errCh:
+		if !errors.Is(err, ErrPanicked) {
+			t.Fatalf("expected ErrPanicked, got %v", err)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("error handler not called within timeout")
+	}
+}
+
+func TestAsyncSender_SendWait_Panic(t *testing.T) {
+	a := NewAsyncSender(&panicSender{})
+	defer a.Close()
+
+	if err := a.SendWait(context.Background(), testEmail()); !errors.Is(err, ErrPanicked) {
+		t.Fatalf("expected ErrPanicked, got %v", err)
 	}
 }
 

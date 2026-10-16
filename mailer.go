@@ -7,7 +7,7 @@ import (
 	"maps"
 	"sync"
 
-	"golang.org/x/sync/errgroup"
+	"github.com/KARTIKrocks/go-worker"
 )
 
 // Mailer provides a high-level email sending interface.
@@ -192,7 +192,8 @@ func (m *Mailer) SendEmail(ctx context.Context, email *Email) error {
 // the entire batch fails without sending any emails.
 //
 // If any email fails to send, the first error is returned. All emails are
-// attempted regardless of individual failures.
+// attempted regardless of individual failures. A panicking Sender fails its
+// email with an error wrapping ErrPanicked.
 func (m *Mailer) SendBatch(ctx context.Context, emails []*Email, concurrencyLimit int) error {
 	if concurrencyLimit <= 0 {
 		concurrencyLimit = 10
@@ -214,21 +215,26 @@ func (m *Mailer) SendBatch(ctx context.Context, emails []*Email, concurrencyLimi
 		prepared[i] = e
 	}
 
-	// Send emails concurrently. Use a plain errgroup (no WithContext) so that
-	// a single failure does not cancel other in-flight sends.
-	g := &errgroup.Group{}
-	g.SetLimit(concurrencyLimit)
+	if len(prepared) == 0 {
+		return nil
+	}
 
+	pool, err := worker.NewPool(worker.WithWorkers(min(concurrencyLimit, len(prepared))))
+	if err != nil {
+		return err
+	}
+	defer func() { _ = pool.Close() }()
+
+	// A Group, unlike an ErrorGroup, does not cancel the other in-flight
+	// sends when one fails.
+	g := worker.NewGroupContext(ctx, pool)
 	for _, email := range prepared {
-		g.Go(func() error {
-			if err := ctx.Err(); err != nil {
-				return err
-			}
+		g.Go(func(ctx context.Context) error {
 			return m.sender.Send(ctx, email)
 		})
 	}
 
-	return g.Wait()
+	return panicErr(g.Wait())
 }
 
 // Close closes the mailer

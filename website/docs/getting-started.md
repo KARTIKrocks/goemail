@@ -8,8 +8,7 @@ description: Install goemail and send your first email over SMTP.
 
 ## Installation
 
-Requires **Go 1.27+**. The core module has no third-party dependencies
-beyond `golang.org/x/sync` and `golang.org/x/time`.
+Requires **Go 1.27+**.
 
 ```bash
 go get github.com/KARTIKrocks/goemail

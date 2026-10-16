@@ -23,7 +23,6 @@
 //   - Async queue worker for non-blocking background delivery
 //   - Provider adapters: SendGrid, Mailgun, AWS SES (providers submodules)
 //   - DKIM signing with RSA-SHA256 and Ed25519-SHA256 (RFC 6376/8463)
-//   - Minimal dependencies (only golang.org/x/sync and golang.org/x/time)
 //
 // # Quick Start
 //
