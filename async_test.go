@@ -269,8 +269,8 @@ func TestAsyncSender_ErrorHandler(t *testing.T) {
 	if !errors.Is(gotErr, want) {
 		t.Fatalf("expected %v, got %v", want, gotErr)
 	}
-	if gotEmail == nil {
-		t.Fatal("expected email in error handler")
+	if gotEmail != e {
+		t.Fatal("expected the email passed to Send in the error handler")
 	}
 }
 

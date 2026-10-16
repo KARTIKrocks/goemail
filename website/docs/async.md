@@ -41,8 +41,8 @@ mailer := email.NewMailer(wrapped, "no-reply@example.com")
 | --- | --- | --- |
 | `WithQueueSize(n)` | 100 | Buffer capacity. `Send` returns `ErrQueueFull` when full; `SendWait` waits for space. |
 | `WithWorkers(n)` | 1 | Number of goroutines pulling from the queue. |
-| `WithAsyncLogger(l)` | no-op | Logger for queue lifecycle events. |
-| `WithErrorHandler(fn)` | no-op | Called for every send that fails after retries. |
+| `WithAsyncLogger(l)` | no-op | Logger for failed background sends and recovered panics. |
+| `WithErrorHandler(fn)` | no-op | Called with the `*Email` passed to `Send` when its background send fails. |
 
 ## Send vs SendWait
 

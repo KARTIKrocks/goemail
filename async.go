@@ -124,7 +124,8 @@ func (a *AsyncSender) Send(ctx context.Context, e *Email) error {
 	return poolErr(a.pool.TrySubmitJob(&asyncJob{
 		sender: a.sender,
 		ctx:    context.WithoutCancel(ctx),
-		email:  cloneEmail(e), // the caller may reuse e once Send returns
+		email:  e,
+		toSend: cloneEmail(e), // the caller may reuse e once Send returns
 	}))
 }
 
@@ -160,11 +161,12 @@ func (a *AsyncSender) Close() error {
 type asyncJob struct {
 	sender Sender
 	ctx    context.Context
-	email  *Email
+	email  *Email // reported to the error handler, as passed to Send
+	toSend *Email // sent
 }
 
 func (j *asyncJob) Process(context.Context) error {
-	return wrapSend(j.sender.Send(j.ctx, j.email)) //nolint:contextcheck // the caller's detached context, as documented on Send
+	return wrapSend(j.sender.Send(j.ctx, j.toSend)) //nolint:contextcheck // the caller's detached context, as documented on Send
 }
 
 func (a *AsyncSender) jobFailed(job worker.Job, err error, _ time.Duration) {
