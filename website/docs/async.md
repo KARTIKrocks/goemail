@@ -39,10 +39,10 @@ mailer := email.NewMailer(wrapped, "no-reply@example.com")
 
 | Option | Default | Description |
 | --- | --- | --- |
-| `WithQueueSize(n)` | 100 | Buffer capacity. `Send` blocks (or fails the context) when full. |
+| `WithQueueSize(n)` | 100 | Buffer capacity. `Send` returns `ErrQueueFull` when full; `SendWait` waits for space. |
 | `WithWorkers(n)` | 1 | Number of goroutines pulling from the queue. |
-| `WithAsyncLogger(l)` | no-op | Logger for queue lifecycle events. |
-| `WithErrorHandler(fn)` | no-op | Called for every send that fails after retries. |
+| `WithAsyncLogger(l)` | no-op | Logger for failed background sends and recovered panics. |
+| `WithErrorHandler(fn)` | no-op | Called with the `*Email` passed to `Send` when its background send fails. |
 
 ## Send vs SendWait
 
@@ -57,7 +57,7 @@ CLI tool or a synchronous test.
 ```go
 // Fire and forget — returns once queued.
 if err := async.Send(ctx, msg); err != nil {
-    return err // queue full or context canceled
+    return err // ErrQueueFull or ErrQueueClosed
 }
 
 // Block until delivered.
@@ -66,11 +66,22 @@ if err := async.SendWait(ctx, msg); err != nil {
 }
 ```
 
+## Panics
+
+_Added in 0.4._ A panic in the wrapped `Sender` does not crash the process.
+The send fails with an error wrapping `ErrPanicked`: `SendWait` returns it,
+and for `Send` it goes to the error handler. Match it with
+`errors.Is(err, email.ErrPanicked)`.
+
 ## Close
 
 `Close` drains the queue, waits for in-flight workers to finish, then
 closes the underlying sender. Always defer it during shutdown so queued
 emails are not lost.
+
+_Changed in 0.4._ A `SendWait` still waiting for queue space returns
+`ErrQueueClosed` as soon as `Close` is called; before, `Close` blocked until
+that email got a slot.
 
 ```go
 async := email.NewAsyncSender(sender, email.WithWorkers(3))

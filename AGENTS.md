@@ -4,7 +4,7 @@ Guidance for AI coding agents working in the **goemail** repository.
 
 ## Project
 
-`goemail` is a production-ready email library for Go. Module path is `github.com/KARTIKrocks/goemail`, but the **package name is `email`** (imported as `email "github.com/KARTIKrocks/goemail"`). The core library has minimal dependencies (only `golang.org/x/sync` and `golang.org/x/time`); anything heavier lives in a separate sub-module under `providers/`.
+`goemail` is a production-ready email library for Go. Module path is `github.com/KARTIKrocks/goemail`, but the **package name is `email`** (imported as `email "github.com/KARTIKrocks/goemail"`). The core library has minimal dependencies (only `github.com/KARTIKrocks/go-worker` and `golang.org/x/time`); anything heavier lives in a separate sub-module under `providers/`.
 
 ## Multi-module layout
 

@@ -64,5 +64,4 @@ generated from the source and is always authoritative.
 
 ## Requirements
 
-Go 1.22 or later. The core module has no third-party dependencies beyond
-`golang.org/x/sync` and `golang.org/x/time`.
+Go 1.27 or later.
