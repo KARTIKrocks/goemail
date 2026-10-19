@@ -1,4 +1,4 @@
-github.com/KARTIKrocks/go-worker v0.1.0 h1:FH1UuTr77Sn+D9k+ITgdngppFRLcbmvHbCwg9FLX/Xo=
-github.com/KARTIKrocks/go-worker v0.1.0/go.mod h1:lvv3J5revYFixZKE5EPaIbcPld2EZkxWTGJQ1Aa7UdQ=
+github.com/KARTIKrocks/go-worker v0.2.0 h1:C4iWQGtgDV8q4k0v3vK1L+ln5BX/wZYPh6i2aqR1/JQ=
+github.com/KARTIKrocks/go-worker v0.2.0/go.mod h1:lvv3J5revYFixZKE5EPaIbcPld2EZkxWTGJQ1Aa7UdQ=
 golang.org/x/time v0.16.0 h1:vMb6ptszcQMkcwiRTAuNNU50gom6++Q/6gY2hDM6VDE=
 golang.org/x/time v0.16.0/go.mod h1:rVKOqvZeKvrDKTQiAHJ7wmwP0RzleSphoEA9RcdLA0s=
