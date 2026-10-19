@@ -177,8 +177,8 @@ func (a *AsyncSender) jobFailed(job worker.Job, err error, _ time.Duration) {
 	err = poolErr(err)
 	a.logger.Error("async email send failed",
 		"error", err,
-		"to", j.email.To,
-		"subject", j.email.Subject,
+		"to", j.toSend.To, // the copy: the caller may be changing j.email
+		"subject", j.toSend.Subject,
 	)
 	if a.errorHandler != nil {
 		a.errorHandler(j.ctx, j.email, err)

@@ -7,6 +7,7 @@ import (
 	"sync"
 	"sync/atomic"
 	"testing"
+	"testing/synctest"
 	"time"
 
 	"github.com/KARTIKrocks/go-worker"
@@ -14,21 +15,16 @@ import (
 
 // slowSender blocks on Send until its channel is closed or a value is sent.
 type slowSender struct {
-	gate    chan struct{}
-	started chan struct{} // receives once per Send that has begun blocking
-	mu      sync.Mutex
-	sent    []*Email
+	gate chan struct{}
+	mu   sync.Mutex
+	sent []*Email
 }
 
 func newSlowSender() *slowSender {
-	return &slowSender{gate: make(chan struct{}), started: make(chan struct{}, 100)}
+	return &slowSender{gate: make(chan struct{})}
 }
 
 func (s *slowSender) Send(_ context.Context, e *Email) error {
-	select {
-	case s.started <- struct{}{}:
-	default:
-	}
 	<-s.gate // block until released
 	s.mu.Lock()
 	s.sent = append(s.sent, e)
@@ -153,39 +149,83 @@ func TestAsyncSender_Send_QueueFull(t *testing.T) {
 }
 
 func TestAsyncSender_Close_UnblocksSendWait(t *testing.T) {
-	slow := newSlowSender()
-	a := NewAsyncSender(slow, WithQueueSize(1))
+	synctest.Test(t, func(t *testing.T) {
+		slow := newSlowSender()
+		a := NewAsyncSender(slow, WithQueueSize(1))
 
-	// Occupy the worker, then fill the one queue slot.
-	if err := a.Send(context.Background(), testEmail()); err != nil {
-		t.Fatalf("first send: %v", err)
-	}
-	<-slow.started
-	if err := a.Send(context.Background(), testEmail()); err != nil {
-		t.Fatalf("second send: %v", err)
-	}
-
-	waitErr := make(chan error, 1)
-	go func() { waitErr <- a.SendWait(context.Background(), testEmail()) }()
-
-	closed := make(chan struct{})
-	go func() {
-		a.Close()
-		close(closed)
-	}()
-
-	select {
-	case err := <-waitErr:
-		if !errors.Is(err, ErrQueueClosed) {
-			t.Fatalf("expected ErrQueueClosed, got %v", err)
+		// Occupy the worker, then fill the one queue slot.
+		if err := a.Send(context.Background(), testEmail()); err != nil {
+			t.Fatalf("first send: %v", err)
 		}
-	case <-time.After(5 * time.Second):
-		t.Fatal("SendWait still blocked after Close")
-	}
+		synctest.Wait()
+		if err := a.Send(context.Background(), testEmail()); err != nil {
+			t.Fatalf("second send: %v", err)
+		}
 
-	slow.release()
-	<-closed
+		waitErr := make(chan error, 1)
+		go func() { waitErr <- a.SendWait(context.Background(), testEmail()) }()
+		synctest.Wait() // SendWait is now blocked on the full queue
+
+		closed := make(chan struct{})
+		go func() {
+			a.Close()
+			close(closed)
+		}()
+		synctest.Wait()
+
+		select {
+		case err := <-waitErr:
+			if !errors.Is(err, ErrQueueClosed) {
+				t.Fatalf("expected ErrQueueClosed, got %v", err)
+			}
+		default:
+			t.Fatal("SendWait still blocked after Close")
+		}
+
+		slow.release()
+		<-closed
+	})
 }
+
+func TestAsyncSender_FailureLogUsesSentCopy(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		gate := make(chan struct{})
+		logger := &recordingLogger{}
+		a := NewAsyncSender(gatedFailSender{gate}, WithAsyncLogger(logger))
+
+		e := testEmail()
+		want := e.Subject
+		if err := a.Send(context.Background(), e); err != nil {
+			t.Fatalf("send: %v", err)
+		}
+		e.SetSubject("changed after Send")
+		close(gate)
+		a.Close()
+
+		logger.mu.Lock()
+		defer logger.mu.Unlock()
+		for _, entry := range logger.entries {
+			if entry.msg != "async email send failed" {
+				continue
+			}
+			got := entry.args[slices.Index(entry.args, any("subject"))+1]
+			if got != want {
+				t.Fatalf("logged subject %q, want %q", got, want)
+			}
+			return
+		}
+		t.Fatal("failure not logged")
+	})
+}
+
+// gatedFailSender fails each Send once its gate is closed.
+type gatedFailSender struct{ gate chan struct{} }
+
+func (s gatedFailSender) Send(context.Context, *Email) error {
+	<-s.gate
+	return errors.New("send failed")
+}
+func (gatedFailSender) Close() error { return nil }
 
 func TestAsyncSender_Send_AfterClose(t *testing.T) {
 	mock := NewMockSender()
