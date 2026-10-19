@@ -2,9 +2,9 @@ module github.com/KARTIKrocks/goemail/providers/mailgun
 
 go 1.27
 
-require github.com/KARTIKrocks/goemail v0.3.1
+require github.com/KARTIKrocks/goemail v0.4.0
 
 require (
-	golang.org/x/sync v0.24.0 // indirect
+	github.com/KARTIKrocks/go-worker v0.2.0 // indirect
 	golang.org/x/time v0.16.0 // indirect
 )
