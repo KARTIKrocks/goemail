@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-10-19
+
 ### Fixed
 
 - A panicking `Sender` no longer crashes the process from `AsyncSender` or
@@ -15,6 +17,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   goes to the `AsyncSender` logger, as does a panic in the error handler.
 - `AsyncSender.Close` no longer blocks behind a `SendWait` that is waiting for
   queue space; that `SendWait` now returns `ErrQueueClosed`.
+- `AsyncSender` queues a copy of each email, so a caller can reuse or change
+  the `*Email` once `Send` returns without racing the worker or changing what
+  is delivered. The error handler still receives the email passed to `Send`.
+- `SendWait` and `SendBatch` return the send's own error when it fails just as
+  the context ends, instead of only `ctx.Err()`.
+
+### Changed
+
+- `providers/ses` and `providers/otelmail` pick up AWS SDK for Go v2 and
+  OpenTelemetry SDK updates.
 
 ## [0.3.1] - 2026-09-14
 
@@ -260,7 +272,8 @@ Initial public release.
 
 - Go 1.26 or newer.
 
-[Unreleased]: https://github.com/KARTIKrocks/goemail/compare/v0.3.1...HEAD
+[Unreleased]: https://github.com/KARTIKrocks/goemail/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/KARTIKrocks/goemail/compare/v0.3.1...v0.4.0
 [0.3.1]: https://github.com/KARTIKrocks/goemail/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/KARTIKrocks/goemail/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/KARTIKrocks/goemail/compare/v0.1.0...v0.2.0
