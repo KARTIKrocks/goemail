@@ -3,8 +3,11 @@ package email
 import (
 	"context"
 	"errors"
+	"fmt"
 	"sync"
-	"sync/atomic"
+	"time"
+
+	"github.com/KARTIKrocks/go-worker"
 )
 
 var (
@@ -15,26 +18,21 @@ var (
 	ErrQueueClosed = errors.New("email: async queue is closed")
 )
 
-type asyncTask struct {
-	ctx   context.Context
-	email *Email
-	errCh chan<- error // nil = fire-and-forget, non-nil = SendWait
-}
-
 // AsyncSender wraps a Sender and sends emails asynchronously via a buffered
 // queue processed by background worker goroutines. It implements the Sender
 // interface so it can be used anywhere a Sender is expected.
+//
+// A Sender that panics fails that one send with an error wrapping ErrPanicked
+// instead of crashing the process.
 type AsyncSender struct {
 	sender       Sender
-	queue        chan *asyncTask
+	pool         *worker.Pool
+	queueSize    int
 	workers      int
 	logger       Logger
 	errorHandler func(ctx context.Context, email *Email, err error)
-	wg           sync.WaitGroup
 	once         sync.Once
-	closed       atomic.Bool
-	closeMu      sync.RWMutex // protects queue from concurrent send/close
-	closeErr     error        // stored by Close so repeat calls return the same error
+	closeErr     error // stored by Close so repeat calls return the same error
 }
 
 // AsyncOption configures an AsyncSender.
@@ -45,7 +43,7 @@ type AsyncOption func(*AsyncSender)
 func WithQueueSize(size int) AsyncOption {
 	return func(a *AsyncSender) {
 		if size > 0 {
-			a.queue = make(chan *asyncTask, size)
+			a.queueSize = size
 		}
 	}
 }
@@ -81,20 +79,26 @@ func WithErrorHandler(fn func(ctx context.Context, email *Email, err error)) Asy
 // Workers are started immediately. Call Close to drain the queue and shut down.
 func NewAsyncSender(sender Sender, opts ...AsyncOption) *AsyncSender {
 	a := &AsyncSender{
-		sender:  sender,
-		queue:   make(chan *asyncTask, 100),
-		workers: 1,
-		logger:  NoOpLogger{},
+		sender:    sender,
+		queueSize: 100,
+		workers:   1,
+		logger:    NoOpLogger{},
 	}
 
 	for _, opt := range opts {
 		opt(a)
 	}
 
-	a.wg.Add(a.workers)
-	for range a.workers {
-		go a.worker()
+	pool, err := worker.NewPool(
+		worker.WithWorkers(a.workers),
+		worker.WithQueueSize(a.queueSize),
+		worker.WithLogger(poolLogger{a.logger}),
+		worker.WithHooks(worker.Hooks{OnJobFailed: a.jobFailed}),
+	)
+	if err != nil {
+		panic("email: " + err.Error()) // unreachable: the options only accept positive sizes
 	}
+	a.pool = pool
 
 	return a
 }
@@ -109,10 +113,7 @@ func NewAsyncSender(sender Sender, opts ...AsyncOption) *AsyncSender {
 // preserved. Use SendWait if you need to block on completion or propagate
 // cancellation.
 func (a *AsyncSender) Send(ctx context.Context, e *Email) error {
-	a.closeMu.RLock()
-	defer a.closeMu.RUnlock()
-
-	if a.closed.Load() {
+	if a.pool.IsClosed() {
 		return ErrQueueClosed
 	}
 
@@ -120,80 +121,107 @@ func (a *AsyncSender) Send(ctx context.Context, e *Email) error {
 		return err
 	}
 
-	task := &asyncTask{ctx: context.WithoutCancel(ctx), email: e}
-
-	select {
-	case a.queue <- task:
-		return nil
-	default:
-		return ErrQueueFull
-	}
+	return poolErr(a.pool.TrySubmitJob(&asyncJob{
+		sender: a.sender,
+		ctx:    context.WithoutCancel(ctx),
+		email:  e,
+		toSend: cloneEmail(e), // the caller may reuse e once Send returns
+	}))
 }
 
 // SendWait validates the email eagerly, enqueues it, and blocks until the
 // background worker has finished sending (or the context is cancelled).
 func (a *AsyncSender) SendWait(ctx context.Context, e *Email) error {
-	a.closeMu.RLock()
-	if a.closed.Load() {
-		a.closeMu.RUnlock()
+	if a.pool.IsClosed() {
 		return ErrQueueClosed
 	}
 
 	if err := e.Validate(); err != nil {
-		a.closeMu.RUnlock()
 		return err
 	}
 
-	errCh := make(chan error, 1)
-	task := &asyncTask{ctx: ctx, email: e, errCh: errCh}
-
-	select {
-	case a.queue <- task:
-		a.closeMu.RUnlock()
-	case <-ctx.Done():
-		a.closeMu.RUnlock()
-		return ctx.Err()
-	}
-
-	select {
-	case err := <-errCh:
-		return err
-	case <-ctx.Done():
-		return ctx.Err()
-	}
+	e = cloneEmail(e) // the job can outlive a cancelled ctx
+	return poolErr(a.pool.SubmitWait(ctx, func(ctx context.Context) error {
+		return wrapSend(a.sender.Send(ctx, e))
+	}))
 }
 
 // Close stops accepting new emails, waits for in-flight work to complete,
 // and closes the underlying sender. It is safe to call multiple times.
 func (a *AsyncSender) Close() error {
 	a.once.Do(func() {
-		a.closeMu.Lock()
-		a.closed.Store(true)
-		close(a.queue)
-		a.closeMu.Unlock()
-		a.wg.Wait()
+		_ = a.pool.Close()
 		a.closeErr = a.sender.Close()
 	})
 	return a.closeErr
 }
 
-func (a *AsyncSender) worker() {
-	defer a.wg.Done()
-	for task := range a.queue {
-		err := a.sender.Send(task.ctx, task.email)
-		if task.errCh != nil {
-			task.errCh <- err
-			continue
-		}
-		if err != nil {
-			a.logger.Error("async email send failed",
-				"error", err,
-				"to", task.email.To,
-				"subject", task.email.Subject,
-			)
-			if a.errorHandler != nil {
-				a.errorHandler(task.ctx, task.email, err)
-			}
-		}
+// asyncJob is a fire-and-forget send. SendWait does not use it, so jobFailed
+// reports only the failures nobody is waiting on.
+type asyncJob struct {
+	sender Sender
+	ctx    context.Context
+	email  *Email // reported to the error handler, as passed to Send
+	toSend *Email // sent
+}
+
+func (j *asyncJob) Process(context.Context) error {
+	return wrapSend(j.sender.Send(j.ctx, j.toSend)) //nolint:contextcheck // the caller's detached context, as documented on Send
+}
+
+func (a *AsyncSender) jobFailed(job worker.Job, err error, _ time.Duration) {
+	j, ok := job.(*asyncJob)
+	if !ok {
+		return
+	}
+	err = poolErr(err)
+	a.logger.Error("async email send failed",
+		"error", err,
+		"to", j.toSend.To, // the copy: the caller may be changing j.email
+		"subject", j.toSend.Subject,
+	)
+	if a.errorHandler != nil {
+		a.errorHandler(j.ctx, j.email, err)
 	}
 }
+
+// sendError marks an error returned by the wrapped Sender, so poolErr never
+// mistakes it for one raised by the pool itself, even when the Sender runs a
+// go-worker pool of its own.
+type sendError struct{ err error }
+
+func (e *sendError) Error() string { return e.err.Error() }
+
+func wrapSend(err error) error {
+	if err == nil {
+		return nil
+	}
+	return &sendError{err}
+}
+
+// poolErr turns a pool result back into what callers expect: the Sender's own
+// error untouched, a recovered panic wrapped in ErrPanicked (the error the
+// recovery middleware also returns), and the pool's sentinels mapped to the
+// AsyncSender ones.
+func poolErr(err error) error {
+	if se, ok := errors.AsType[*sendError](err); ok {
+		return se.err
+	}
+	var pe *worker.PanicError
+	switch {
+	case errors.As(err, &pe):
+		return fmt.Errorf("%w: %w", ErrPanicked, err)
+	case errors.Is(err, worker.ErrPoolFull):
+		return ErrQueueFull
+	case errors.Is(err, worker.ErrPoolClosed):
+		return ErrQueueClosed
+	}
+	return err
+}
+
+// poolLogger forwards the pool's warnings and errors, such as a recovered
+// panic's stack trace, and drops its lifecycle messages.
+type poolLogger struct{ Logger }
+
+func (poolLogger) Debug(string, ...any) {}
+func (poolLogger) Info(string, ...any)  {}

@@ -11,6 +11,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/KARTIKrocks/go-worker"
 )
 
 func TestEmailBuilder(t *testing.T) {
@@ -318,6 +320,57 @@ func TestBatchSending(t *testing.T) {
 
 	if count := mock.GetEmailCount(); count != 3 {
 		t.Errorf("expected 3 emails, got %d", count)
+	}
+}
+
+func TestBatchSendingPanicReturnsError(t *testing.T) {
+	mailer := NewMailer(&panicSender{}, "test@example.com")
+
+	emails := []*Email{
+		NewEmail().AddTo("user1@example.com").SetSubject("Test 1").SetBody("Body 1"),
+	}
+
+	if err := mailer.SendBatch(context.Background(), emails, 2); !errors.Is(err, ErrPanicked) {
+		t.Fatalf("expected ErrPanicked, got %v", err)
+	}
+}
+
+func TestBatchSendingSenderPanicErrorPassesThrough(t *testing.T) {
+	want := &worker.PanicError{Value: "inner pool"}
+	mailer := NewMailer(poolErrSender{want}, "test@example.com")
+
+	emails := []*Email{
+		NewEmail().AddTo("user1@example.com").SetSubject("Test 1").SetBody("Body 1"),
+	}
+	err := mailer.SendBatch(context.Background(), emails, 2)
+	if err != want || errors.Is(err, ErrPanicked) {
+		t.Fatalf("expected %v unchanged, got %v", want, err)
+	}
+}
+
+func TestBatchSendingEmpty(t *testing.T) {
+	mailer := NewMailer(NewMockSender(), "test@example.com")
+	if err := mailer.SendBatch(context.Background(), nil, 5); err != nil {
+		t.Fatalf("expected nil, got %v", err)
+	}
+}
+
+func TestBatchSendingCanceledContext(t *testing.T) {
+	mock := NewMockSender()
+	mailer := NewMailer(mock, "test@example.com")
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	emails := []*Email{
+		NewEmail().AddTo("user1@example.com").SetSubject("Test 1").SetBody("Body 1"),
+		NewEmail().AddTo("user2@example.com").SetSubject("Test 2").SetBody("Body 2"),
+	}
+	if err := mailer.SendBatch(ctx, emails, 2); !errors.Is(err, context.Canceled) {
+		t.Fatalf("expected context.Canceled, got %v", err)
+	}
+	if count := mock.GetEmailCount(); count != 0 {
+		t.Errorf("expected 0 emails sent, got %d", count)
 	}
 }
 
