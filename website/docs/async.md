@@ -37,12 +37,12 @@ mailer := email.NewMailer(wrapped, "no-reply@example.com")
 
 ## Options
 
-| Option | Default | Description |
-| --- | --- | --- |
-| `WithQueueSize(n)` | 100 | Buffer capacity. `Send` returns `ErrQueueFull` when full; `SendWait` waits for space. |
-| `WithWorkers(n)` | 1 | Number of goroutines pulling from the queue. |
-| `WithAsyncLogger(l)` | no-op | Logger for failed background sends and recovered panics. |
-| `WithErrorHandler(fn)` | no-op | Called with the `*Email` passed to `Send` when its background send fails. |
+| Option                 | Default | Description                                                                           |
+| ---------------------- | ------- | ------------------------------------------------------------------------------------- |
+| `WithQueueSize(n)`     | 100     | Buffer capacity. `Send` returns `ErrQueueFull` when full; `SendWait` waits for space. |
+| `WithWorkers(n)`       | 1       | Number of goroutines pulling from the queue.                                          |
+| `WithAsyncLogger(l)`   | no-op   | Logger for failed background sends and recovered panics.                              |
+| `WithErrorHandler(fn)` | no-op   | Called with the `*Email` passed to `Send` when its background send fails.             |
 
 ## Send vs SendWait
 

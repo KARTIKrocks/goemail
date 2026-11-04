@@ -17,16 +17,16 @@ parser plugins per provider.
 Provider-specific payloads are normalized into a single `EventType` enum
 so your application code does not branch on provider:
 
-| EventType | Meaning |
-| --- | --- |
-| `EventDelivered` | Accepted by recipient mail server |
-| `EventBounced` | Hard bounce (permanent failure) |
-| `EventDeferred` | Soft bounce (temporary failure) |
-| `EventOpened` | Recipient opened the email |
-| `EventClicked` | Recipient clicked a tracked link |
-| `EventComplained` | Recipient marked the email as spam |
-| `EventUnsubscribed` | Recipient unsubscribed |
-| `EventDropped` | Provider rejected the message before sending |
+| EventType           | Meaning                                      |
+| ------------------- | -------------------------------------------- |
+| `EventDelivered`    | Accepted by recipient mail server            |
+| `EventBounced`      | Hard bounce (permanent failure)              |
+| `EventDeferred`     | Soft bounce (temporary failure)              |
+| `EventOpened`       | Recipient opened the email                   |
+| `EventClicked`      | Recipient clicked a tracked link             |
+| `EventComplained`   | Recipient marked the email as spam           |
+| `EventUnsubscribed` | Recipient unsubscribed                       |
+| `EventDropped`      | Provider rejected the message before sending |
 
 ## WebhookReceiver
 
