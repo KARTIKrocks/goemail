@@ -19,22 +19,22 @@ go get github.com/KARTIKrocks/goemail
 
 ## What you get
 
-| | |
-| --- | --- |
-| **SMTP Support** | TLS / STARTTLS, authentication, and per-message context cancellation |
-| **Templating** | Go `html/template` and `text/template` for HTML and plain-text bodies |
-| **Attachments** | Send files with proper MIME encoding and content types |
-| **Retry Logic** | Configurable exponential backoff for transient SMTP failures |
-| **Rate Limiting** | Built-in token-bucket limiter to avoid overwhelming providers |
-| **Connection Pooling** | Reuse SMTP connections for high-throughput sending |
-| **Async Sending** | Background queue with configurable workers and buffer size |
-| **Middleware Pipeline** | Composable logging, metrics, recovery, and lifecycle hooks |
-| **Provider Adapters** | SendGrid, Mailgun, and AWS SES via HTTP APIs (separate modules) |
-| **DKIM Signing** | RSA-SHA256 / Ed25519 signing per RFC 6376 + 8463 — zero extra deps |
-| **Webhooks** | Receive and normalize delivery events from any provider |
-| **Pluggable Logger** | Bring your own logger — slog, zap, logrus, zerolog, anything |
-| **Mock Sender** | Drop-in test double with assertions on sent messages |
-| **Header Safety** | Automatic header-injection protection and address validation |
+|                         |                                                                       |
+| ----------------------- | --------------------------------------------------------------------- |
+| **SMTP Support**        | TLS / STARTTLS, authentication, and per-message context cancellation  |
+| **Templating**          | Go `html/template` and `text/template` for HTML and plain-text bodies |
+| **Attachments**         | Send files with proper MIME encoding and content types                |
+| **Retry Logic**         | Configurable exponential backoff for transient SMTP failures          |
+| **Rate Limiting**       | Built-in token-bucket limiter to avoid overwhelming providers         |
+| **Connection Pooling**  | Reuse SMTP connections for high-throughput sending                    |
+| **Async Sending**       | Background queue with configurable workers and buffer size            |
+| **Middleware Pipeline** | Composable logging, metrics, recovery, and lifecycle hooks            |
+| **Provider Adapters**   | SendGrid, Mailgun, and AWS SES via HTTP APIs (separate modules)       |
+| **DKIM Signing**        | RSA-SHA256 / Ed25519 signing per RFC 6376 + 8463 — zero extra deps    |
+| **Webhooks**            | Receive and normalize delivery events from any provider               |
+| **Pluggable Logger**    | Bring your own logger — slog, zap, logrus, zerolog, anything          |
+| **Mock Sender**         | Drop-in test double with assertions on sent messages                  |
+| **Header Safety**       | Automatic header-injection protection and address validation          |
 
 ## Two layers: Sender and Mailer
 

@@ -33,11 +33,11 @@ mailer := email.NewMailer(wrapped, "no-reply@example.com")
 Four middleware ship with the core package. They cover the most common
 needs and are safe to stack in any order.
 
-| Middleware | Behavior |
-| --- | --- |
-| `WithLogging(Logger)` | Logs send start, success, and failure with duration |
-| `WithRecovery()` | Catches panics and returns `ErrPanicked` |
-| `WithHooks(SendHooks)` | `OnSend`, `OnSuccess`, `OnFailure` callbacks |
+| Middleware                      | Behavior                                                   |
+| ------------------------------- | ---------------------------------------------------------- |
+| `WithLogging(Logger)`           | Logs send start, success, and failure with duration        |
+| `WithRecovery()`                | Catches panics and returns `ErrPanicked`                   |
+| `WithHooks(SendHooks)`          | `OnSend`, `OnSuccess`, `OnFailure` callbacks               |
 | `WithMetrics(MetricsCollector)` | Counters and duration histograms via the metrics interface |
 
 ## Send Hooks
