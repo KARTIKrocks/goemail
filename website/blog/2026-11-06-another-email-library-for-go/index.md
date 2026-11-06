@@ -22,12 +22,14 @@ each option leaves you to build yourself.
 **[`net/smtp`](https://pkg.go.dev/net/smtp)** is the foundation everything
 else is built on, goemail included. It gives you a `Client` with `Mail`,
 `Rcpt`, `Data`, `StartTLS`, and `PlainAuth` — a correct, minimal
-implementation of the SMTP protocol itself. What it doesn't give you is
-everything past "I can hand one message to one server": no retries, no
-connection reuse across sends, no rate limiting, no MIME multipart assembly,
-no header injection protection beyond what you remember to check yourself.
-That's by design — it's a transport primitive, not a mail client — but it
-means every production service ends up writing the same 200 lines around it.
+implementation of the SMTP protocol itself. You can reuse one `Client` for
+several sequential sends if you hold onto it yourself, but there's no
+pool: no management of multiple reusable connections, no eviction of stale
+ones, no concurrent checkout — and no retries, no rate limiting, no MIME
+multipart assembly, no header injection protection beyond what you
+remember to check yourself. That's by design — it's a transport primitive,
+not a mail client — but it means every production service ends up writing
+the same 200 lines around it.
 
 **`gomail`** (the original [`go-gomail/gomail`](https://github.com/go-gomail/gomail),
 and its forks — [`go-mail/mail`](https://github.com/go-mail/mail), archived
@@ -78,24 +80,26 @@ that show up the moment a `net/smtp` proof-of-concept meets real traffic —
 and that neither the standard library nor a composition-focused wrapper
 hands you — were:
 
-- **Header injection that validation alone won't catch.** A `Subject` or
-  custom header built from user input is an open CRLF-injection vector the
-  moment it's written directly into a MIME header without canonicalization.
+- **Header injection that a single check, called from one place, won't
+  catch.** A `Subject` or custom header built from user input is an open
+  CRLF-injection vector the moment it reaches a MIME header unchecked.
   [Article 2](/blog/header-injection-vulnerability-in-go-email-code) covers
-  why `AddHeader`'s canonicalization and `Validate()`'s CRLF scrub both exist,
-  and why checking only one of the two isn't enough.
+  why `AddHeader`'s guard and `Validate()`'s repeated check both exist —
+  one covers the convenience path, the other covers every path, including
+  the ones that bypass the convenience method entirely.
 - **Retries that don't know a permanent failure from a transient one.**
   Retrying a `550 mailbox unavailable` doesn't get the email delivered — it
   just burns attempts and amplifies load on an already-bouncing address.
   [Article 3](/blog/smtp-retry-duplicate-emails-in-go) is about the RFC 5321
-  status-code logic that decides what's worth retrying, and the exact-once
-  guarantee that's harder to get right than it sounds.
-- **Concurrent sends sharing mutable state they shouldn't.** A `Mailer` used
-  from multiple goroutines, or a batch send that mutates the same `*Email`
-  struct concurrently, is a data race waiting on a benchmark to find it.
+  status-code logic that decides what's worth retrying, and why a failed
+  send still isn't safe to retry blindly even once that's sorted out.
+- **Shared mutable state between a caller and whatever's sending on their
+  behalf.** A `*Email` reused or mutated across goroutines races with
+  whatever's reading it to build the outgoing message.
   [Article 4](/blog/concurrent-go-mailer-deep-copy-email) covers why every
-  send path in goemail deep-copies the message first, and what happens to a
-  library that skips it.
+  send path in goemail deep-copies the message before using it — and the
+  real limits of what that copy can and can't protect against once the
+  caller is mutating concurrently rather than just reusing sequentially.
 - **DKIM signing that's correct per the RFC, not just "it validates in one
   inbox provider's checker."** Header canonicalization, duplicate-header
   ordering, and signature folding all have specific rules in RFC 6376 that

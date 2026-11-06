@@ -137,14 +137,23 @@ inherits that undefined state. Discarding it means the next attempt — retry
 or otherwise — starts clean, from a fresh `MAIL FROM`, on a connection
 that's never seen the previous failure.
 
-This doesn't make SMTP delivery exactly-once — nothing can, without the
-receiving server supporting something like `CHUNKING`/`BDAT` with its own
-transaction semantics, which most servers don't expose. What it buys is
-_at-least-once with a clean boundary_: a given attempt either fully
-succeeds or is cleanly discarded, so the worst case under retry is "this
-message occasionally arrives twice because the server's final ack was lost
-in transit after it actually committed the message" — a problem inherent to
-the SMTP protocol itself, not one goemail's retry loop adds on top of it.
+This doesn't make SMTP delivery exactly-once, or even guarantee
+at-least-once — nothing built on plain SMTP can promise either, since the
+protocol itself has no idempotency token or transaction ID a sender and
+receiver can agree on after the fact. `CHUNKING`/`BDAT` (RFC 3030) changes
+how the message body is transferred in pieces; it doesn't give the client
+a way to ask "did you already get this one," so it wouldn't close this gap
+even on servers that support it. What discarding the connection on failure
+actually buys is a _clean boundary per attempt_: each attempt either fully
+commits or is thrown away rather than reused in an undefined state. The
+failure modes that remain are real ones — bounded retries can still be
+exhausted without the message ever arriving, and if more than one attempt
+independently sends successfully while that attempt's own final ack gets
+lost in transit, the recipient can end up with more than two copies, not
+just the occasional two. What goemail's retry loop removes is the
+self-inflicted version of this problem — a corrupted pooled connection
+making every _subsequent_, unrelated send unreliable too — not the
+duplicate-delivery risk that's inherent to SMTP itself.
 
 ## Backoff has to respect the caller giving up
 

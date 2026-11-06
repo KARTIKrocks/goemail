@@ -14,35 +14,68 @@ up only under real concurrent load:
 ```go
 mailer := email.NewMailer(sender, "noreply@example.com")
 
-e := email.NewEmail().SetFrom("noreply@example.com").SetSubject("Receipt")
+e := email.NewEmail().
+    SetFrom("noreply@example.com").
+    SetSubject("Receipt").
+    SetBody("Thanks for your order.")
+
 for _, order := range orders {
-    e.AddTo(order.CustomerEmail) // reusing e across iterations
-    go mailer.SendEmail(ctx, e)
+    e.To = []string{order.CustomerEmail} // reusing e across iterations
+    go func() {
+        if err := mailer.SendEmail(ctx, e); err != nil {
+            log.Println("send failed:", err)
+        }
+    }()
 }
 ```
 
-Every goroutine captured the _same_ `*Email`. `AddTo` appends to `e.To` on
-every loop iteration while earlier goroutines are concurrently reading that
-same slice to build their own message. Some customers get the receipt
-addressed to a `To` list with three other people on it. Some get a `fatal
-error: concurrent map read and map write` if `Headers` is involved. None of
-this shows up if you test by sending one email at a time.
+Every goroutine captured the _same_ `*Email` pointer. The main goroutine
+reassigns `e.To` on every loop iteration — not appending, so there's no
+recipient list growing across sends, just a plain field overwrite — while
+a previously spawned goroutine is concurrently inside `mailer.SendEmail`,
+reading that same field to build its own copy of the message. That read
+and that write have no ordering relationship the Go memory model
+guarantees; `go test -race` will flag it, and in practice some customers
+get a receipt addressed to the _next_ order's recipient instead of their
+own. None of this shows up if you test by sending one email at a time.
 
 {/* truncate */}
 
-## The fix that looks like it's not needed
+## What the internal copy fixes, and what it can't
 
-The obvious response is "don't do that, it's clearly a bug in the caller's
-code." True — and also exactly the kind of bug a library that holds itself
-to being "safe for concurrent use" (as
-[goemail](https://github.com/KARTIKrocks/goemail)'s `Mailer` documents
-itself to be) has to defend against anyway, because the alternative is a
-library whose safety guarantee is actually "safe for concurrent use, as long
-as callers never reuse an `*Email`" — a caveat nobody reads until after
-they've shipped the bug.
+The obvious response to the example above is "don't do that, it's clearly
+a bug in the caller's code" — and that's true in a way worth being precise
+about. The race happens entirely in the caller's own goroutine, on the
+caller's own field assignment, before
+[goemail](https://github.com/KARTIKrocks/goemail)'s `Mailer` ever gets a
+chance to run. No amount of copying inside `SendEmail` can retroactively
+fix a write that already raced with a read that started before the copy
+existed — once you're dispatching a send with `go` and mutating the same
+`*Email` from the dispatching goroutine afterward, the data race is
+unavoidable regardless of what the callee does with its copy of the
+pointer. The fix for _this_ bug is in the caller: build a separate
+`*Email` per order instead of reusing one.
 
-`Mailer.SendEmail` doesn't take the caller's pointer at face value. It
-copies first:
+Where the internal copy earns its keep is a different, far more common
+pattern: calling `Send` or `SendEmail` _synchronously_, in a loop, and
+reusing or mutating the same `*Email` for the next iteration once the
+previous call has returned:
+
+```go
+e := email.NewEmail().SetFrom("noreply@example.com").SetSubject("Receipt")
+for _, order := range orders {
+    e.To = []string{order.CustomerEmail}
+    if err := mailer.SendEmail(ctx, e); err != nil { // blocks until done
+        log.Println("send failed:", err)
+    }
+}
+```
+
+This has no race — Go's sequential program order guarantees the next
+`e.To = ...` can't run until `SendEmail` has already returned — but it
+still needs the library to not hold onto a reference to `e` past the
+point where `Send` hands the message off. `Mailer.SendEmail` doesn't take
+the caller's pointer at face value. It copies first:
 
 ```go
 func (m *Mailer) SendEmail(ctx context.Context, email *Email) error {
@@ -79,9 +112,12 @@ for i, email := range emails {
 }
 ```
 
-After this point, nothing the caller does to their original `*Email` —
-appending to `To`, mutating `Headers`, anything — can reach the copy that's
-actually in flight to a worker goroutine.
+After `SendEmail` returns, nothing the caller does to their original
+`*Email` — reassigning `To`, mutating `Headers`, anything — can reach the
+copy that was already handed to the underlying `Sender`. That's the
+guarantee this buys: safe to reuse _sequentially_, once a call has
+returned, not safe to mutate _concurrently_ with a call that's still in
+flight.
 
 ## Why a shallow copy isn't enough
 
@@ -196,16 +232,37 @@ when a caller actually mutates `e` between calling `Send` and the async
 worker picking it up — exactly the kind of thing that's invisible until a
 production timing window exposes it.
 
-## What this buys you
+That design choice also hands the caller a sharp edge along with the
+convenience: `j.email` is still the caller's own, live, mutable object. If
+the error handler fires concurrently with the caller mutating that same
+`*Email` elsewhere — or if the handler's response is "retry by calling
+`Send` again with this object" — the caller is responsible for
+synchronizing that access or for having kept a separate snapshot to retry
+with, the same way `AsyncSender` keeps `toSend` separate from `email`
+internally. The library can't do that synchronization on the caller's
+behalf without taking away the one thing this parameter exists to
+provide: the caller's own, unwrapped reference.
+
+## What this buys you, and what it doesn't
 
 None of this is exotic Go — it's `make` plus `copy` plus a documented
-contract. What it buys is a guarantee that's actually true rather than
-true-with-an-asterisk: `Mailer` and `AsyncSender` are safe for concurrent
-use _including_ when callers reuse or mutate the `*Email` they passed in,
-not just when they're careful not to. The alternative — documenting "don't
-reuse the struct" and hoping every caller reads it — is the kind of
-guarantee that holds right up until a batch job under load finds the one
-code path that didn't.
+contract. What it buys is narrower than "safe no matter what you do with
+the pointer," and worth stating precisely rather than rounding up:
+`Mailer` and `AsyncSender` guarantee that once a call has taken your
+`*Email` — `Send` or `SendEmail` returned, `SendBatch` finished preparing
+its copies, `AsyncSender.Send` returned after enqueueing — nothing
+internal holds a reference to it anymore, so reusing or mutating that same
+`*Email` for your _next_ message is always safe. It is not, and can't be
+made to be, a guarantee that it's safe to mutate a `*Email` concurrently
+with a call that's still in flight on it — that race exists in the
+caller's own code, before the library's copy ever runs, and no internal
+`make`/`copy` pair can reach backward in time to prevent it.
+
+The practical rule that follows: one `*Email` per concurrent send. Build a
+fresh one per goroutine, per recipient, per retry — exactly like the
+corrected loop earlier in this post — and whether the library deep-copies
+internally stops being something you need to reason about at all, because
+there's no shared mutable state left for a race to happen on.
 
 ```bash
 go get github.com/KARTIKrocks/goemail

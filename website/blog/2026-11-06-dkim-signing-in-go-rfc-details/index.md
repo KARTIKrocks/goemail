@@ -58,6 +58,9 @@ func canonicalizeHeader(header string, algo Canonicalization) string {
         return header
     }
     before, after, ok := strings.Cut(header, ":")
+    if !ok {
+        return header
+    }
     name := strings.ToLower(strings.TrimSpace(before))
     value := after
     // Unfold: remove CRLF followed by whitespace
@@ -91,12 +94,17 @@ embedded in the output. Order isn't incidental here; the two transforms
 only compose correctly in the sequence the RFC specifies.
 
 Body canonicalization has its own version of this same trap: trailing
-empty lines have to be stripped, but only from the _end_ of the body, and
-the body still needs a single trailing CRLF added back if trimming removed
-everything. `removeTrailingEmptyLines` and `canonicalizeBody` handle this
-as a specific algorithm, not a regex — a body that canonicalizes to the
-empty string still has to produce `"\r\n"`, not `""`, or the body hash
-is computed over the wrong byte sequence.
+empty lines have to be stripped, but only from the _end_ of the body. RFC
+6376 draws a sharp line between the two algorithms here that's easy to
+miss: §3.4.3 defines the canonical form of a completely empty body as a
+single CRLF for _simple_ canonicalization, but §3.4.4 defines it as the
+_empty string_ for _relaxed_ — zero octets, not two. goemail's
+`canonicalizeBody` handles the simple case correctly
+(`if body == "" { return "\r\n" }`), but its relaxed branch falls through
+to the same `"\r\n"` return whenever the trimmed body has no lines left, instead of
+the empty string the RFC specifies for that mode. It's a one-line
+divergence, in exactly the kind of path — an empty body — that's rare
+enough to never show up in ordinary testing.
 
 ## Detail two: which headers get signed, and in what order
 
@@ -128,9 +136,12 @@ There's a second, related rule hiding in the same section: **oversigning**.
 `h=` can list a header name more times than the message actually has
 occurrences of it, specifically to prevent an attacker from _adding_ a new
 header after the message is signed (a forwarded message with an injected
-second `Subject`, say) — the extra name in `h=` with no corresponding
-header contributes the RFC's defined "null string" to the hash instead of
-being skipped:
+second `Subject`, say). The RFC calls what a missing occurrence
+contributes to the hash the "null string" — in practice that just means
+the loop below skips it and writes nothing for that entry — but the name
+stays in `h=` either way, so a verifier that finds more `Subject`
+occurrences in `h=` than the message actually has is exactly what flags
+the insertion:
 
 ```go
 for _, h := range presentHeaders {
@@ -143,13 +154,18 @@ for _, h := range presentHeaders {
 }
 ```
 
-goemail's implementation only signs headers that are actually present
-(`presentHeaders` is pre-filtered), which is the simpler and correct choice
-for _this_ library's threat model — but it's worth knowing oversigning
-exists as a technique, because a from-scratch DKIM implementation that
-tries to be clever about "sign every header name in my default list
-whether or not it's there" without understanding the null-string rule will
-produce signatures that don't match what any compliant verifier computes.
+goemail's `presentHeaders` filter only drops header _names_ that are
+entirely absent from the message — it doesn't collapse duplicates in the
+caller's own `SignedHeaders` config. Configure `SignedHeaders` with
+`"Subject"` listed twice and a message with exactly one `Subject` header,
+and `h=` ends up with `Subject:Subject` while only one of the two lookups
+in the signing loop actually finds a header to hash — that's oversigning,
+produced deliberately by a caller who wants it, not by a bug in the
+filter. It's worth knowing the technique exists either way, because a
+from-scratch DKIM implementation that tries to be clever about "sign
+every header name in my default list whether or not it's there" without
+understanding the null-string rule will produce signatures that don't
+match what any compliant verifier computes.
 
 ## Detail three: the signature header signs itself, almost
 
@@ -169,13 +185,19 @@ fullDKIMHeader := "DKIM-Signature: " + dkimTag + foldSignature(sigB64) + "\r\n"
 ```
 
 This is also where the RSA-SHA256 and Ed25519-SHA256 algorithms genuinely
-diverge, not just in key type. RFC 8463 §3 specifies that Ed25519-SHA256
-signs the SHA-256 _digest_ of the canonicalized data, the same as
-RSA-SHA256 — but `ed25519.Sign` in Go's standard library signs raw message
-bytes by convention (Ed25519 doesn't pre-hash internally the way RSA-PKCS1
-does), so getting this right for Ed25519 means hashing explicitly before
-calling `Sign`, where the RSA path gets the hash-then-sign behavior for
-free from `rsa.SignPKCS1v15`:
+diverge, not just in key type — though not in the way it first looks.
+Neither `rsa.SignPKCS1v15` nor `ed25519.Sign` hashes anything for you;
+both are given an already-computed SHA-256 digest, and `signData` calls
+`sha256.Sum256(data)` explicitly on both branches. The asymmetry is in
+_why_ that line is unmissable on one path and easy to drop on the other.
+`rsa.SignPKCS1v15`'s signature takes a `crypto.Hash` identifier alongside
+the digest — `crypto.SHA256, hash[:]` — so the function signature itself
+documents "this parameter must already be a hash," and it's awkward to
+call any other way. `ed25519.Sign` takes nothing but a plain `[]byte`;
+nothing in the type signature hints that the convention for
+ed25519-sha256 (RFC 8463 §3) requires hashing first, so it's the one spot
+where skipping the explicit `sha256.Sum256` compiles, runs, and produces
+a completely valid-looking signature over the wrong input:
 
 ```go
 func signData(data []byte, config *DKIMConfig) ([]byte, error) {
@@ -194,18 +216,26 @@ func signData(data []byte, config *DKIMConfig) ([]byte, error) {
 }
 ```
 
-Skip the explicit `sha256.Sum256` on the Ed25519 path and you get a
-signature that's completely valid Ed25519 output, over the wrong input —
-again, no error anywhere, just a signature that doesn't verify.
+Again, no error anywhere if that line were missing — just a syntactically
+valid signature that doesn't verify against any compliant implementation.
 
 ## Even the line-folding has a rule
 
-RFC 6376 §3.7 limits header lines to 78 columns, and the base64 signature
-gets folded well under that — goemail wraps at 72 characters per line,
-leaving room for the leading whitespace continuation lines require — with
-the fold happening _after_
-encoding, at a column boundary the RFC specifies, not wherever happens to
-be convenient:
+RFC 5322 §2.1.1 recommends 78-column lines and caps them at 998, and RFC
+6376 §3.7 explicitly permits folding the `b=` value at arbitrary byte
+positions within the base64 — the signer doesn't have to line-break on
+word or tag boundaries the way the rest of the header does. goemail folds
+the base64 into 72-byte chunks, each continuation line prefixed with an
+8-space indent (`"\r\n        "`), for an 80-column continuation line —
+comfortably inside the 998 hard cap, past the 78-column recommendation
+by design, because 72 bytes of actual signature per line is worth 2
+columns over a soft guideline. The first chunk is the exception: it's
+appended directly after the unfolded tag list (`d=`, `s=`, `h=`, `bh=`,
+and so on) with no leading newline, so that first physical line of the
+header is `DKIM-Signature:` plus every prior tag plus 72 more bytes —
+comfortably past the 78-column recommendation on its own before the
+signature even starts, which is exactly why folding the rest of the
+signature is worth doing at all:
 
 ```go
 func foldSignature(sig string) string {
