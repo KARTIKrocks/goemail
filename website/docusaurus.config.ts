@@ -121,6 +121,19 @@ const config: Config = {
           },
           onlyIncludeVersions: includedVersions,
         },
+        blog: {
+          blogTitle: 'goemail Blog',
+          blogDescription:
+            'Engineering notes on building a production-grade email package for Go.',
+          showReadingTime: true,
+          editUrl: 'https://github.com/KARTIKrocks/goemail/tree/main/website/',
+          onInlineAuthors: 'throw',
+          onUntruncatedBlogPosts: 'throw',
+          feedOptions: {
+            type: ['rss', 'atom'],
+            xslt: true,
+          },
+        },
         theme: {
           customCss: './src/css/custom.css',
         },
@@ -156,6 +169,7 @@ const config: Config = {
           position: 'left',
           label: 'Docs',
         },
+        { to: '/blog', label: 'Blog', position: 'left' },
         {
           type: 'docsVersionDropdown',
           position: 'right',
@@ -187,6 +201,7 @@ const config: Config = {
             { label: 'Getting Started', to: '/docs/getting-started' },
             { label: 'Mailer', to: '/docs/mailer' },
             { label: 'Provider Adapters', to: '/docs/providers' },
+            { label: 'Blog', to: '/blog' },
           ],
         },
         {

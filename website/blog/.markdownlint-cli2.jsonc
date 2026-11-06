@@ -1,0 +1,10 @@
+// Docusaurus blog posts use `{/* truncate */}` as the excerpt marker — it's
+// the only form that survives MDX compilation here (`<!-- truncate -->`
+// fails MDX compile since website/docusaurus.config.ts has no `markdown.format`
+// override, so .md files parse as full MDX). MD037 can't tell that `/*` `*/`
+// apart from emphasis asterisks, so it's disabled for this directory only.
+{
+  "config": {
+    "MD037": false
+  }
+}
