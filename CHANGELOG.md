@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-11-06
+
+### Fixed
+
+- DKIM relaxed body canonicalization (`c=relaxed/...`, the default) now
+  canonicalizes a completely empty `Body`/`HTMLBody` to the empty string
+  per RFC 6376 §3.4.4, instead of a single CRLF. The previous behavior
+  produced a `bh=` hash a strict RFC 6376-compliant verifier would reject.
+
+### Changed
+
+- `providers/ses` picks up AWS SDK for Go v2 updates
+  (`aws-sdk-go-v2` v1.47.5, `config` v1.33.13, `service/sesv2` v1.79.5).
+
 ## [0.4.0] - 2026-10-19
 
 ### Fixed
@@ -272,7 +286,8 @@ Initial public release.
 
 - Go 1.26 or newer.
 
-[Unreleased]: https://github.com/KARTIKrocks/goemail/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/KARTIKrocks/goemail/compare/v0.4.1...HEAD
+[0.4.1]: https://github.com/KARTIKrocks/goemail/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/KARTIKrocks/goemail/compare/v0.3.1...v0.4.0
 [0.3.1]: https://github.com/KARTIKrocks/goemail/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/KARTIKrocks/goemail/compare/v0.2.0...v0.3.0
