@@ -33,7 +33,7 @@ means every production service ends up writing the same 200 lines around it.
 and its forks — [`go-mail/mail`](https://github.com/go-mail/mail), archived
 by its owner in late 2024, and a Shopify fork archived mid-2024) was for
 years the default answer to "what do I use instead of raw `net/smtp`." It's
-a genuinely pleasant API for *composing* a message — attachments, HTML
+a genuinely pleasant API for _composing_ a message — attachments, HTML
 alternatives, a `Dialer` that reuses one connection for a batch — and for a
 lot of side projects that's the whole job. What it was never built for:
 retry logic, DKIM signing, rate limiting, or anything resembling a

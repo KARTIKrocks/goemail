@@ -21,7 +21,7 @@ for _, order := range orders {
 }
 ```
 
-Every goroutine captured the *same* `*Email`. `AddTo` appends to `e.To` on
+Every goroutine captured the _same_ `*Email`. `AddTo` appends to `e.To` on
 every loop iteration while earlier goroutines are concurrently reading that
 same slice to build their own message. Some customers get the receipt
 addressed to a `To` list with three other people on it. Some get a `fatal
@@ -91,13 +91,13 @@ and strings are immutable in Go, so two `Email` values can share the same
 underlying string data safely forever. The bug is specifically in the
 fields that are reference types: `To`, `Cc`, `Bcc` (`[]string`),
 `Attachments` (`[]Attachment`), and `Headers` (`map[string]string`). A
-struct copy copies the *slice header* — pointer, length, capacity — not the
+struct copy copies the _slice header_ — pointer, length, capacity — not the
 backing array. Two `Email` values after `cp := *email` point at the exact
 same underlying array for `To`. `cp.To = append(cp.To, "x")` can still
 mutate data the original slice is reading, if the append happens to reuse
 the existing backing array rather than allocating a new one (it will,
 whenever there's spare capacity) — which means the shallow-copy version of
-this fix only fails *intermittently*, depending on how much spare capacity
+this fix only fails _intermittently_, depending on how much spare capacity
 happened to be in the slice at copy time. That's a worse failure mode than
 no fix at all: it passes code review, passes CI, and fails in production
 under exactly the load pattern that triggers it.
@@ -162,7 +162,7 @@ func (a *AsyncSender) Send(ctx context.Context, e *Email) error {
 `toSend` is the clone — it's what actually reaches the wire, so the caller
 mutating `e` after `Send` returns (which they're free to do; `Send` returns
 immediately and queues the work) can't change what gets delivered. `email`
-deliberately keeps the caller's *original* pointer, not a clone, because
+deliberately keeps the caller's _original_ pointer, not a clone, because
 it's only ever used for one thing: reporting to the error handler if the
 send fails.
 
@@ -185,9 +185,9 @@ func (a *AsyncSender) jobFailed(job worker.Job, err error, _ time.Duration) {
 ```
 
 That inline comment — `"to", j.toSend.To, // the copy: the caller may be
-changing j.email` — is the whole design decision in one line: the *log*
+changing j.email` — is the whole design decision in one line: the _log_
 has to describe what was actually sent, so it reads from the immutable
-clone; the *error handler callback* is handed the caller's own object on
+clone; the _error handler callback_ is handed the caller's own object on
 purpose, so application code reacting to the failure (retrying, alerting,
 whatever) is working with the same object identity it started with, not a
 library-internal copy it has no other reference to. Using the wrong one of
@@ -201,7 +201,7 @@ production timing window exposes it.
 None of this is exotic Go — it's `make` plus `copy` plus a documented
 contract. What it buys is a guarantee that's actually true rather than
 true-with-an-asterisk: `Mailer` and `AsyncSender` are safe for concurrent
-use *including* when callers reuse or mutate the `*Email` they passed in,
+use _including_ when callers reuse or mutate the `*Email` they passed in,
 not just when they're careful not to. The alternative — documenting "don't
 reuse the struct" and hoping every caller reads it — is the kind of
 guarantee that holds right up until a batch job under load finds the one

@@ -64,7 +64,7 @@ Four separate checks, each catching a category of error that retrying
 cannot fix: a cancelled or expired context (the caller gave up — retrying
 now just ignores that), a 5xx SMTP reply (deterministic protocol-level
 rejection), a validation failure (the message itself is malformed — the
-*ninth* attempt at sending an email with no recipients fails identically to
+_ninth_ attempt at sending an email with no recipients fails identically to
 the first), and message-building failures (same message, same encoding
 bug, every time). What's left after those four — connection timeouts,
 4xx greylisting responses, a dropped TCP connection mid-handshake — is the
@@ -132,7 +132,7 @@ func (s *SMTPSender) sendPooled(ctx context.Context, from string, recipients []s
 That `discard` instead of `put` on the error path is the detail that's easy
 to skip and expensive to skip: a connection that failed mid-`DATA` is left
 in protocol state no one can predict without re-querying the server, and
-handing it back into the pool means the *next* caller's unrelated send
+handing it back into the pool means the _next_ caller's unrelated send
 inherits that undefined state. Discarding it means the next attempt — retry
 or otherwise — starts clean, from a fresh `MAIL FROM`, on a connection
 that's never seen the previous failure.
@@ -140,7 +140,7 @@ that's never seen the previous failure.
 This doesn't make SMTP delivery exactly-once — nothing can, without the
 receiving server supporting something like `CHUNKING`/`BDAT` with its own
 transaction semantics, which most servers don't expose. What it buys is
-*at-least-once with a clean boundary*: a given attempt either fully
+_at-least-once with a clean boundary_: a given attempt either fully
 succeeds or is cleanly discarded, so the worst case under retry is "this
 message occasionally arrives twice because the server's final ack was lost
 in transit after it actually committed the message" — a problem inherent to
