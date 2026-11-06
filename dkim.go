@@ -406,8 +406,11 @@ func canonicalizeBody(body string, algo Canonicalization) string {
 		result = result[:len(result)-1]
 	}
 
+	// Unlike simple canonicalization, RFC 6376 §3.4.4 defines the canonical
+	// form of a completely empty body as the empty string (0 octets), not a
+	// single CRLF.
 	if len(result) == 0 {
-		return "\r\n"
+		return ""
 	}
 
 	return strings.Join(result, "\r\n") + "\r\n"

@@ -636,7 +636,10 @@ func TestCanonicalizeBody_Relaxed(t *testing.T) {
 		input string
 		want  string
 	}{
-		{"empty body", "", "\r\n"},
+		// RFC 6376 §3.4.4: unlike simple canonicalization, an empty body
+		// canonicalizes to the empty string, not a single CRLF.
+		{"empty body", "", ""},
+		{"whitespace-only body", "  \r\n\t\r\n", ""},
 		{"trailing spaces removed", "Hello  \r\n", "Hello\r\n"},
 		{"internal spaces collapsed", "Hello   World\r\n", "Hello World\r\n"},
 		{"tabs collapsed", "Hello\t\tWorld\r\n", "Hello World\r\n"},
