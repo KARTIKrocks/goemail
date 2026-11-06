@@ -1,7 +1,7 @@
 github.com/KARTIKrocks/go-worker v0.2.0 h1:C4iWQGtgDV8q4k0v3vK1L+ln5BX/wZYPh6i2aqR1/JQ=
 github.com/KARTIKrocks/go-worker v0.2.0/go.mod h1:lvv3J5revYFixZKE5EPaIbcPld2EZkxWTGJQ1Aa7UdQ=
-github.com/KARTIKrocks/goemail v0.4.0 h1:ps+gNdIUe0aLDAj7jWH90bpIgA3VcUvz0Ln52aRij0M=
-github.com/KARTIKrocks/goemail v0.4.0/go.mod h1:oyAMeAgnVCFE9fpPpo5c0gSuM4xtE7UGkGdmtSoRg3s=
+github.com/KARTIKrocks/goemail v0.4.1 h1:KeRrntBI+tM/N8lr7o6jGaIKtZiflOCzh+Pwn4vTwgQ=
+github.com/KARTIKrocks/goemail v0.4.1/go.mod h1:oyAMeAgnVCFE9fpPpo5c0gSuM4xtE7UGkGdmtSoRg3s=
 github.com/aws/aws-sdk-go-v2 v1.47.5 h1:5yA+A+BiXbDq1ZLbYwPViwhEGDMdR0MEhL8Jh2LnLS4=
 github.com/aws/aws-sdk-go-v2 v1.47.5/go.mod h1:iNIkogrRvFwm+1OQIUOP2lPBtlXZboOIUWiCa+pHEMw=
 github.com/aws/aws-sdk-go-v2/config v1.33.13 h1:u52x6ISQOx172tpwM0VRxhJzEsTJYpMcEYUGM2A1wrw=

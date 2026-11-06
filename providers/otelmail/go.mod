@@ -3,7 +3,7 @@ module github.com/KARTIKrocks/goemail/providers/otelmail
 go 1.27
 
 require (
-	github.com/KARTIKrocks/goemail v0.4.0
+	github.com/KARTIKrocks/goemail v0.4.1
 	go.opentelemetry.io/otel v1.47.0
 	go.opentelemetry.io/otel/sdk v1.47.0
 	go.opentelemetry.io/otel/trace v1.47.0
